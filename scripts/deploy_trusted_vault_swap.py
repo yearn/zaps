@@ -13,4 +13,6 @@ def main():
     if input("Deploy TrustedVaultSwap? y/[N]: ").lower() != "y":
         return
 
-    vaultSwap = TrustedVaultSwap.deploy(PublicKeyAccount("v2.registry.ychad.eth").address, {"from": dev})
+    vaultSwap = TrustedVaultSwap.deploy(
+        PublicKeyAccount("v2.registry.ychad.eth").address, {"from": dev}
+    )

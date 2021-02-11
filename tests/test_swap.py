@@ -4,6 +4,7 @@ from brownie import chain
 from eth_account import Account
 from eth_account.messages import encode_structured_data
 
+
 def generate_permit(vault, owner: Account, spender: Account, value, nonce, deadline):
     name = "Yearn Vault"
     version = vault.apiVersion()
@@ -43,9 +44,22 @@ def generate_permit(vault, owner: Account, spender: Account, value, nonce, deadl
 
     return encode_structured_data(data)
 
-def test_swap_v1(vaultFactory, vaultFactoryV1, controllerFactoryV1, Token, StrategyDForceDAI, user, vaultSwap, gov, accounts):
-    token = Token.at("0x6B175474E89094C44Da98b954EedeAC495271d0F") # DAI
-    tokenOwner = accounts.at("0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643", force=True) # whale for DAI
+
+def test_swap_v1(
+    vaultFactory,
+    vaultFactoryV1,
+    controllerFactoryV1,
+    Token,
+    StrategyDForceDAI,
+    user,
+    vaultSwap,
+    gov,
+    accounts,
+):
+    token = Token.at("0x6B175474E89094C44Da98b954EedeAC495271d0F")  # DAI
+    tokenOwner = accounts.at(
+        "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643", force=True
+    )  # whale for DAI
 
     # Create a V1 Vault
     controller = controllerFactoryV1()
@@ -73,6 +87,7 @@ def test_swap_v1(vaultFactory, vaultFactoryV1, controllerFactoryV1, Token, Strat
     assert vaultA.balanceOf(user) == 0
     assert vaultB.balanceOf(user) > 0
 
+
 def test_swap_approve(vaultFactory, tokenFactory, tokenOwner, user, vaultSwap):
     token = tokenFactory()
     vaultA = vaultFactory(token)
@@ -88,15 +103,17 @@ def test_swap_approve(vaultFactory, tokenFactory, tokenOwner, user, vaultSwap):
 
     # Migrate in vaultB
     balanceVaultA = vaultA.balanceOf(user)
-    
+
     vaultA.approve(vaultSwap, balanceVaultA, {"from": user})
     vaultSwap.swap(vaultA, vaultB, {"from": user})
 
     assert vaultA.balanceOf(user) == 0
     assert vaultB.balanceOf(user) > 0
 
-    
-def test_swap_permit(vaultFactory, tokenFactory, tokenOwner, vaultSwap, chain, accounts):
+
+def test_swap_permit(
+    vaultFactory, tokenFactory, tokenOwner, vaultSwap, chain, accounts
+):
     userForSignature = Account.create()
     user = accounts.at(userForSignature.address, force=True)
 
@@ -116,13 +133,21 @@ def test_swap_permit(vaultFactory, tokenFactory, tokenOwner, vaultSwap, chain, a
     balanceVaultA = vaultA.balanceOf(user)
 
     deadline = chain[-1].timestamp + 3600
-    permit = generate_permit(vaultA, userForSignature, vaultSwap, balanceVaultA, vaultA.nonces(user), deadline)
+    permit = generate_permit(
+        vaultA,
+        userForSignature,
+        vaultSwap,
+        balanceVaultA,
+        vaultA.nonces(user),
+        deadline,
+    )
     signature = userForSignature.sign_message(permit).signature
 
     vaultSwap.swap(vaultA, vaultB, deadline, signature, {"from": user})
 
     assert vaultA.balanceOf(user) == 0
     assert vaultB.balanceOf(user) > 0
+
 
 def test_swap_wrong_vaults(vaultFactory, tokenFactory, tokenOwner, user, vaultSwap):
     token = tokenFactory()
@@ -140,7 +165,7 @@ def test_swap_wrong_vaults(vaultFactory, tokenFactory, tokenOwner, user, vaultSw
 
     # Migrate in vaultB
     balanceVaultA = vaultA.balanceOf(user)
-    
+
     vaultA.approve(vaultSwap, balanceVaultA, {"from": user})
 
     with brownie.reverts("Vaults must have the same token"):
