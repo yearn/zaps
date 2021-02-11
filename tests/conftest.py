@@ -1,80 +1,58 @@
 import pytest
 from brownie import config
-from brownie import Contract
 
+@pytest.fixture
+def tokenOwner(accounts):
+    yield accounts[0]
+
+@pytest.fixture
+def tokenFactory(tokenOwner, Token):
+    def factory():
+        return tokenOwner.deploy(Token)
+    yield factory
 
 @pytest.fixture
 def gov(accounts):
-    yield accounts[0]
+    yield accounts[1]
 
 
 @pytest.fixture
-def rewards(accounts):
-    yield accounts[1]
+def rewards(gov):
+    yield gov
 
 
 @pytest.fixture
 def guardian(accounts):
     yield accounts[2]
 
-
 @pytest.fixture
-def management(accounts):
+def user(accounts):
     yield accounts[3]
 
+@pytest.fixture
+def controllerFactoryV1(gov, StrategyControllerV2):
+    def factory():
+        controller = gov.deploy(StrategyControllerV2, "0x0000000000000000000000000000000000000000")
+        return controller
+    yield factory
 
 @pytest.fixture
-def strategist(accounts):
-    yield accounts[4]
-
-
-@pytest.fixture
-def keeper(accounts):
-    yield accounts[5]
-
+def vaultFactoryV1(gov, yVault):
+    def factory(token, controller):
+        vault = gov.deploy(yVault, token, controller)
+        return vault
+    yield factory
 
 @pytest.fixture
-def token():
-    token_address = "0x6b175474e89094c44da98b954eedeac495271d0f"  # this should be the address of the ERC-20 used by the strategy/vault (DAI)
-    yield Contract(token_address)
-
-
-@pytest.fixture
-def amount(accounts, token):
-    amount = 10_000 * 10 ** token.decimals()
-    # In order to get some funds for the token you are about to use,
-    # it impersonate an exchange address to use it's funds.
-    reserve = accounts.at("0xd551234ae421e3bcba99a0da6d736074f22192ff", force=True)
-    token.transfer(accounts[0], amount, {"from": reserve})
-    yield amount
-
+def vaultFactory(pm, gov, rewards, guardian):
+    def factory(token):
+        Vault = pm(config["dependencies"][0]).Vault
+        vault = guardian.deploy(Vault)
+        vault.initialize(token, gov, rewards, "", "", {"from": guardian})
+        vault.setDepositLimit(2**256-1, {"from": gov})
+        return vault
+    yield factory
 
 @pytest.fixture
-def weth():
-    token_address = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
-    yield Contract(token_address)
-
-
-@pytest.fixture
-def weth_amout(gov, weth):
-    weth_amout = 10 ** weth.decimals()
-    gov.transfer(weth, weth_amout)
-    yield weth_amout
-
-
-@pytest.fixture
-def vault(pm, gov, rewards, guardian, management, token):
-    Vault = pm(config["dependencies"][0]).Vault
-    vault = guardian.deploy(Vault)
-    vault.initialize(token, gov, rewards, "", "", guardian)
-    vault.setDepositLimit(2 ** 256 - 1, {"from": gov})
-    vault.setManagement(management, {"from": gov})
-    yield vault
-
-
-@pytest.fixture
-def strategy(strategist, keeper, vault, Strategy, gov):
-    strategy = strategist.deploy(Strategy, vault)
-    strategy.setKeeper(keeper)
-    vault.addStrategy(strategy, 10_000, 0, 1_000, {"from": gov})
-    yield strategy
+def vaultSwap(guardian, VaultSwap):
+    yield guardian.deploy(VaultSwap)
