@@ -2,22 +2,37 @@
 pragma solidity ^0.6.2;
 
 interface Balancer {
-    function joinPool(uint poolAmountOut, uint[] calldata maxAmountsIn) external;
-    function exitPool(uint poolAmountIn, uint[] calldata minAmountsOut) external;
+    function joinPool(uint256 poolAmountOut, uint256[] calldata maxAmountsIn)
+        external;
+
+    function exitPool(uint256 poolAmountIn, uint256[] calldata minAmountsOut)
+        external;
+
     function swapExactAmountIn(
         address tokenIn,
-        uint tokenAmountIn,
+        uint256 tokenAmountIn,
         address tokenOut,
-        uint minAmountOut,
-        uint maxPrice
-    ) external returns (uint tokenAmountOut, uint spotPriceAfter);
+        uint256 minAmountOut,
+        uint256 maxPrice
+    ) external returns (uint256 tokenAmountOut, uint256 spotPriceAfter);
+
     function swapExactAmountOut(
         address tokenIn,
-        uint maxAmountIn,
+        uint256 maxAmountIn,
         address tokenOut,
-        uint tokenAmountOut,
-        uint maxPrice
-    ) external returns (uint tokenAmountIn, uint spotPriceAfter);
-    function joinswapExternAmountIn(address tokenIn, uint tokenAmountIn, uint minPoolAmountOut) external returns (uint poolAmountOut);
-    function exitswapPoolAmountIn(address tokenOut, uint poolAmountIn, uint minAmountOut) external returns (uint tokenAmountOut);
+        uint256 tokenAmountOut,
+        uint256 maxPrice
+    ) external returns (uint256 tokenAmountIn, uint256 spotPriceAfter);
+
+    function joinswapExternAmountIn(
+        address tokenIn,
+        uint256 tokenAmountIn,
+        uint256 minPoolAmountOut
+    ) external returns (uint256 poolAmountOut);
+
+    function exitswapPoolAmountIn(
+        address tokenOut,
+        uint256 poolAmountIn,
+        uint256 minAmountOut
+    ) external returns (uint256 tokenAmountOut);
 }

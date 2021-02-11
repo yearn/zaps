@@ -9,10 +9,7 @@ interface OneSplitAudit {
         uint256 minReturn,
         uint256[] calldata distribution,
         uint256 flags
-    )
-        external
-        payable
-        returns(uint256 returnAmount);
+    ) external payable returns (uint256 returnAmount);
 
     function getExpectedReturn(
         address fromToken,
@@ -23,8 +20,5 @@ interface OneSplitAudit {
     )
         external
         view
-        returns(
-            uint256 returnAmount,
-            uint256[] memory distribution
-        );
+        returns (uint256 returnAmount, uint256[] memory distribution);
 }
