@@ -2,7 +2,7 @@
 
 pragma solidity 0.6.12;
 
-import "./VaultSwap.sol";
+import "./VaultMigrator.sol";
 import "./Governable.sol";
 
 import "../interfaces/IRegistry.sol";
@@ -13,7 +13,7 @@ Based on https://github.com/emilianobonassi/yearn-vaults-swap
 
  */
 
-interface ITrustedVaultSwap is IVaultSwap {
+interface ITrustedVaultMigrator is IVaultMigrator {
     function registry() external returns (address);
 
     function sweep(address _token) external;
@@ -21,7 +21,11 @@ interface ITrustedVaultSwap is IVaultSwap {
     function setRegistry(address _registry) external;
 }
 
-contract TrustedVaultSwap is VaultSwap, Governable, ITrustedVaultSwap {
+contract TrustedVaultMigrator is
+    VaultMigrator,
+    Governable,
+    ITrustedVaultMigrator
+{
     address public override registry;
 
     modifier onlyRegisteredVault(address vault) {
@@ -34,7 +38,7 @@ contract TrustedVaultSwap is VaultSwap, Governable, ITrustedVaultSwap {
 
     constructor(address _registry)
         public
-        VaultSwap()
+        VaultMigrator()
         Governable(address(0xFEB4acf3df3cDEA7399794D0869ef76A6EfAff52))
     {
         require(_registry != address(0), "Registry cannot be 0");
@@ -42,12 +46,12 @@ contract TrustedVaultSwap is VaultSwap, Governable, ITrustedVaultSwap {
         registry = _registry;
     }
 
-    function _swap(
+    function _migrate(
         address vaultFrom,
         address vaultTo,
         uint256 shares
     ) internal override onlyRegisteredVault(vaultTo) {
-        super._swap(vaultFrom, vaultTo, shares);
+        super._migrate(vaultFrom, vaultTo, shares);
     }
 
     function sweep(address _token) external override onlyGovernance {

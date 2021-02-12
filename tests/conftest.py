@@ -1,11 +1,25 @@
 import pytest
 from brownie import config
 
-
 @pytest.fixture
 def tokenOwner(accounts):
     yield accounts[0]
 
+@pytest.fixture
+def gov(accounts):
+    yield accounts[1]
+
+@pytest.fixture
+def rewards(gov):
+    yield gov
+
+@pytest.fixture
+def guardian(accounts):
+    yield accounts[2]
+
+@pytest.fixture
+def user(accounts):
+    yield accounts[3]
 
 @pytest.fixture
 def tokenFactory(tokenOwner, Token):
@@ -13,26 +27,6 @@ def tokenFactory(tokenOwner, Token):
         return tokenOwner.deploy(Token)
 
     yield factory
-
-
-@pytest.fixture
-def gov(accounts):
-    yield accounts[1]
-
-
-@pytest.fixture
-def rewards(gov):
-    yield gov
-
-
-@pytest.fixture
-def guardian(accounts):
-    yield accounts[2]
-
-
-@pytest.fixture
-def user(accounts):
-    yield accounts[3]
 
 
 @pytest.fixture
@@ -68,5 +62,5 @@ def vaultFactory(pm, gov, rewards, guardian):
 
 
 @pytest.fixture
-def vaultSwap(guardian, VaultSwap):
-    yield guardian.deploy(VaultSwap)
+def vaultMigrator(guardian, VaultMigratorMock):
+    yield guardian.deploy(VaultMigratorMock)
