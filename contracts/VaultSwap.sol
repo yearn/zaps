@@ -10,7 +10,32 @@ import {
     IERC20
 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
-contract VaultSwap {
+interface IVaultSwap {
+    function swap(address vaultFrom, address vaultTo) external;
+
+    function swap(
+        address vaultFrom,
+        address vaultTo,
+        uint256 shares
+    ) external;
+
+    function swap(
+        address vaultFrom,
+        address vaultTo,
+        uint256 deadline,
+        bytes calldata signature
+    ) external;
+
+    function swap(
+        address vaultFrom,
+        address vaultTo,
+        uint256 shares,
+        uint256 deadline,
+        bytes calldata signature
+    ) external;
+}
+
+contract VaultSwap is IVaultSwap {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
     using SafeERC20 for IVaultAPI;
@@ -23,7 +48,7 @@ contract VaultSwap {
         _;
     }
 
-    function swap(address vaultFrom, address vaultTo) external {
+    function swap(address vaultFrom, address vaultTo) external override {
         _swap(vaultFrom, vaultTo, IVaultAPI(vaultFrom).balanceOf(msg.sender));
     }
 
@@ -31,7 +56,7 @@ contract VaultSwap {
         address vaultFrom,
         address vaultTo,
         uint256 shares
-    ) external {
+    ) external override {
         _swap(vaultFrom, vaultTo, shares);
     }
 
@@ -40,7 +65,7 @@ contract VaultSwap {
         address vaultTo,
         uint256 deadline,
         bytes calldata signature
-    ) external {
+    ) external override {
         uint256 shares = IVaultAPI(vaultFrom).balanceOf(msg.sender);
 
         _permit(vaultFrom, shares, deadline, signature);
@@ -53,7 +78,7 @@ contract VaultSwap {
         uint256 shares,
         uint256 deadline,
         bytes calldata signature
-    ) external {
+    ) external override {
         _permit(vaultFrom, shares, deadline, signature);
         _swap(vaultFrom, vaultTo, shares);
     }

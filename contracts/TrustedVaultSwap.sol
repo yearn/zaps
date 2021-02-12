@@ -13,8 +13,16 @@ Based on https://github.com/emilianobonassi/yearn-vaults-swap
 
  */
 
-contract TrustedVaultSwap is VaultSwap, Governable {
-    address public registry;
+interface ITrustedVaultSwap is IVaultSwap {
+    function registry() external returns (address);
+
+    function sweep(address _token) external;
+
+    function setRegistry(address _registry) external;
+}
+
+contract TrustedVaultSwap is VaultSwap, Governable, ITrustedVaultSwap {
+    address public override registry;
 
     modifier onlyRegisteredVault(address vault) {
         require(
@@ -42,7 +50,7 @@ contract TrustedVaultSwap is VaultSwap, Governable {
         super._swap(vaultFrom, vaultTo, shares);
     }
 
-    function sweep(address _token) external onlyGovernance {
+    function sweep(address _token) external override onlyGovernance {
         IERC20(_token).safeTransfer(
             governance,
             IERC20(_token).balanceOf(address(this))
@@ -50,7 +58,7 @@ contract TrustedVaultSwap is VaultSwap, Governable {
     }
 
     // setters
-    function setRegistry(address _registry) external onlyGovernance {
+    function setRegistry(address _registry) external override onlyGovernance {
         require(_registry != address(0), "Registry cannot be 0");
         registry = _registry;
     }
