@@ -4,12 +4,7 @@ from brownie import chain, web3
 
 
 def test_sweep(
-    interface,
-    Token,
-    user,
-    TrustedVaultSwap,
-    gov,
-    accounts,
+    interface, Token, user, TrustedVaultSwap, gov, accounts,
 ):
     # Registry
     registry = "0xe15461b18ee31b7379019dc523231c57d1cbc18c"
@@ -35,12 +30,7 @@ def test_sweep(
 
 
 def test_sweep_from_rando(
-    interface,
-    Token,
-    user,
-    TrustedVaultSwap,
-    gov,
-    accounts,
+    interface, Token, user, TrustedVaultSwap, gov, accounts,
 ):
     # Registry v2
     registry = "0xe15461b18ee31b7379019dc523231c57d1cbc18c"
