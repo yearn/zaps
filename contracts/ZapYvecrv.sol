@@ -4,7 +4,12 @@ pragma experimental ABIEncoderV2;
 
 import {Math} from "@openzeppelin/contracts/math/Math.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {SafeERC20, SafeMath, IERC20, Address} from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import {
+    SafeERC20,
+    SafeMath,
+    IERC20,
+    Address
+} from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
 interface IYVault is IERC20 {
     function deposit(uint256 amount, address recipient) external;
@@ -15,7 +20,9 @@ interface IYVault is IERC20 {
 }
 
 interface ICurveFi {
-    function add_liquidity(uint256[2] calldata amounts, uint256 min_mint_amount) external payable;
+    function add_liquidity(uint256[2] calldata amounts, uint256 min_mint_amount)
+        external
+        payable;
 
     function remove_liquidity_one_coin(
         uint256 _token_amount,
@@ -29,10 +36,13 @@ contract ZapYvecrv is Ownable {
     using Address for address;
     using SafeMath for uint256;
 
-    IYVault public yVault = IYVault(address(0x0e880118C29F095143dDA28e64d95333A9e75A47));
-    ICurveFi public CurveStableSwap = ICurveFi(address(0xc5424B857f758E906013F3555Dad202e4bdB4567)); // Curve ETH/sETH StableSwap pool contract
+    IYVault public yVault =
+        IYVault(address(0x0e880118C29F095143dDA28e64d95333A9e75A47));
+    ICurveFi public CurveStableSwap =
+        ICurveFi(address(0xc5424B857f758E906013F3555Dad202e4bdB4567)); // Curve ETH/sETH StableSwap pool contract
 
-    IERC20 public want = IERC20(address(0xA3D87FffcE63B53E0d54fAa1cc983B7eB0b74A9c)); // Curve.fi ETH/sETH (eCRV)
+    IERC20 public want =
+        IERC20(address(0xA3D87FffcE63B53E0d54fAa1cc983B7eB0b74A9c)); // Curve.fi ETH/sETH (eCRV)
 
     uint256 public constant DEFAULT_SLIPPAGE = 200; // slippage allowance out of 10000: 2%
     bool private _noReentry = false;
@@ -71,7 +81,11 @@ contract ZapYvecrv is Ownable {
         CurveStableSwap.add_liquidity{value: ethDeposit}([ethDeposit, 0], 0);
 
         uint256 outAmount = want.balanceOf(address(this));
-        require(outAmount.mul(slippageAllowance.add(10000)).div(10000) >= ethDeposit, "TOO MUCH SLIPPAGE");
+        require(
+            outAmount.mul(slippageAllowance.add(10000)).div(10000) >=
+                ethDeposit,
+            "TOO MUCH SLIPPAGE"
+        );
 
         yVault.deposit(outAmount, msg.sender);
     }
@@ -81,7 +95,8 @@ contract ZapYvecrv is Ownable {
     //
 
     function zapOut(uint256 yvTokenAmount, uint256 slippageAllowance) external {
-        uint256 yvTokenWithdrawl = Math.min(yvTokenAmount, yVault.balanceOf(msg.sender));
+        uint256 yvTokenWithdrawl =
+            Math.min(yvTokenAmount, yVault.balanceOf(msg.sender));
         require(yvTokenWithdrawl > 0, "INSUFFICIENT FUNDS");
 
         yVault.transferFrom(msg.sender, address(this), yvTokenWithdrawl);
@@ -95,7 +110,11 @@ contract ZapYvecrv is Ownable {
         uint256 ethBalance = address(this).balance;
         msg.sender.transfer(ethBalance);
 
-        require(ethBalance.mul(slippageAllowance.add(10000)).div(10000) >= wantBalance, "TOO MUCH SLIPPAGE");
+        require(
+            ethBalance.mul(slippageAllowance.add(10000)).div(10000) >=
+                wantBalance,
+            "TOO MUCH SLIPPAGE"
+        );
 
         uint256 leftover = yVault.balanceOf(address(this));
         if (leftover > 0) {
