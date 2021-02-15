@@ -4,6 +4,7 @@ from brownie import Wei, chain
 from eth_account import Account
 from eth_account.messages import encode_structured_data
 
+
 def generate_permit(vault, owner: Account, spender: Account, value, nonce, deadline):
     name = "Yearn Vault"
     version = vault.apiVersion()
@@ -41,6 +42,7 @@ def generate_permit(vault, owner: Account, spender: Account, value, nonce, deadl
         },
     }
     return encode_structured_data(data)
+
 
 def beforeTestMigrateAll(
     user,
@@ -80,12 +82,8 @@ def beforeTestMigrateAll(
     yield vaultA
     yield vaultB
 
-def beforeTestMigrateWithPermit(
-    accounts,
-    tokenOwner,
-    tokenFactory,
-    vaultFactory
-):
+
+def beforeTestMigrateWithPermit(accounts, tokenOwner, tokenFactory, vaultFactory):
     userForSignature = Account.create()
     user = accounts.at(userForSignature.address, force=True)
 
@@ -105,38 +103,27 @@ def beforeTestMigrateWithPermit(
     yield userForSignature
     yield token
     yield tokenAmount
-    yield vaultA 
+    yield vaultA
     yield vaultB
 
-def checkSuccesfullMigrateShares(
-    user,
-    sharesAmount,
-    vaultMigrator,
-    vaultA,
-    vaultB
-):
+
+def checkSuccesfullMigrateShares(user, sharesAmount, vaultMigrator, vaultA, vaultB):
     preMigrationVaultABalance = vaultA.balanceOf(user)
     assert preMigrationVaultABalance >= sharesAmount
-    vaultMigrator.migrateShares(vaultA, vaultB, sharesAmount, { "from": user })
+    vaultMigrator.migrateShares(vaultA, vaultB, sharesAmount, {"from": user})
     postMigrationVaultBBalance = vaultB.balanceOf(user)
     assert vaultA.balanceOf(user) == preMigrationVaultABalance - sharesAmount
     assert postMigrationVaultBBalance == sharesAmount
 
-def checkSuccesfullMigration(
-    tx,
-    user,
-    sharesAmount,
-    vaultMigrator,
-    vaultA,
-    vaultB
-):
+
+def checkSuccesfullMigration(tx, user, sharesAmount, vaultMigrator, vaultA, vaultB):
     preMigrationVaultABalance = vaultA.balanceOf(user)
     assert preMigrationVaultABalance >= sharesAmount
     tx()
     postMigrationVaultBBalance = vaultB.balanceOf(user)
     assert vaultA.balanceOf(user) == preMigrationVaultABalance - sharesAmount
     assert postMigrationVaultBBalance == sharesAmount
-    vaultB.withdraw(sharesAmount, { "from": user })
+    vaultB.withdraw(sharesAmount, {"from": user})
 
 
 def test_migrate_all_not_approved(
@@ -158,11 +145,12 @@ def test_migrate_all_not_approved(
         controllerFactoryV1,
         vaultFactory,
         vaultFactoryV1,
-        StrategyDForceDAI
+        StrategyDForceDAI,
     )
 
     with brownie.reverts("ERC20: transfer amount exceeds allowance"):
         vaultMigrator.migrateAll(vaultA, vaultB, {"from": user})
+
 
 def test_migrate_all_less_approved(
     vaultFactory,
@@ -183,13 +171,14 @@ def test_migrate_all_less_approved(
         controllerFactoryV1,
         vaultFactory,
         vaultFactoryV1,
-        StrategyDForceDAI
+        StrategyDForceDAI,
     )
 
     vaultA.approve(vaultMigrator, tokenAmount - Wei("1 ether"), {"from": user})
 
     with brownie.reverts("ERC20: transfer amount exceeds allowance"):
         vaultMigrator.migrateAll(vaultA, vaultB, {"from": user})
+
 
 def test_migrate_all_approved(
     vaultFactory,
@@ -210,38 +199,31 @@ def test_migrate_all_approved(
         controllerFactoryV1,
         vaultFactory,
         vaultFactoryV1,
-        StrategyDForceDAI
+        StrategyDForceDAI,
     )
 
     vaultA.approve(vaultMigrator, tokenAmount, {"from": user})
-    
+
     def migrateTx():
-        vaultMigrator.migrateAll(vaultA, vaultB, { "from": user })
+        vaultMigrator.migrateAll(vaultA, vaultB, {"from": user})
 
     checkSuccesfullMigration(
-        migrateTx,
-        user,
-        tokenAmount,
-        vaultMigrator,
-        vaultA,
-        vaultB
+        migrateTx, user, tokenAmount, vaultMigrator, vaultA, vaultB
     )
 
-def test_migrate_all_with_lower_permit(    
-    vaultFactory,
-    tokenFactory, 
-    tokenOwner, 
-    vaultMigrator, 
-    chain, 
-    accounts
+
+def test_migrate_all_with_lower_permit(
+    vaultFactory, tokenFactory, tokenOwner, vaultMigrator, chain, accounts
 ):
 
-    user, userForSignature, token, tokenAmount, vaultA, vaultB = beforeTestMigrateWithPermit(
-        accounts,
-        tokenOwner,
-        tokenFactory,
-        vaultFactory
-    )
+    (
+        user,
+        userForSignature,
+        token,
+        tokenAmount,
+        vaultA,
+        vaultB,
+    ) = beforeTestMigrateWithPermit(accounts, tokenOwner, tokenFactory, vaultFactory)
 
     # Migrate in vaultB
     deadline = chain[-1].timestamp + 3600
@@ -257,27 +239,21 @@ def test_migrate_all_with_lower_permit(
 
     with brownie.reverts():
         vaultMigrator.migrateAllWithPermit(
-            vaultA, 
-            vaultB, 
-            deadline, 
-            signature, 
-            {"from": user}
+            vaultA, vaultB, deadline, signature, {"from": user}
         )
 
-def test_migrate_all_with_permit(    
-    vaultFactory,
-    tokenFactory, 
-    tokenOwner, 
-    vaultMigrator, 
-    chain, 
-    accounts
+
+def test_migrate_all_with_permit(
+    vaultFactory, tokenFactory, tokenOwner, vaultMigrator, chain, accounts
 ):
-    user, userForSignature, token, tokenAmount, vaultA, vaultB = beforeTestMigrateWithPermit(
-        accounts,
-        tokenOwner,
-        tokenFactory,
-        vaultFactory
-    )
+    (
+        user,
+        userForSignature,
+        token,
+        tokenAmount,
+        vaultA,
+        vaultB,
+    ) = beforeTestMigrateWithPermit(accounts, tokenOwner, tokenFactory, vaultFactory)
 
     # Migrate in vaultB
     deadline = chain[-1].timestamp + 3600
@@ -293,21 +269,13 @@ def test_migrate_all_with_permit(
 
     def migrateTx():
         vaultMigrator.migrateAllWithPermit(
-            vaultA, 
-            vaultB, 
-            deadline, 
-            signature, 
-            {"from": user}
+            vaultA, vaultB, deadline, signature, {"from": user}
         )
-    
+
     checkSuccesfullMigration(
-        migrateTx,
-        user,
-        tokenAmount,
-        vaultMigrator,
-        vaultA,
-        vaultB
+        migrateTx, user, tokenAmount, vaultMigrator, vaultA, vaultB
     )
+
 
 def test_migrate_shares_no_approve(
     vaultFactory,
@@ -328,10 +296,11 @@ def test_migrate_shares_no_approve(
         controllerFactoryV1,
         vaultFactory,
         vaultFactoryV1,
-        StrategyDForceDAI
+        StrategyDForceDAI,
     )
     with brownie.reverts("ERC20: transfer amount exceeds allowance"):
         vaultMigrator.migrateShares(vaultA, vaultB, tokenAmount, {"from": user})
+
 
 def test_migrate_shares_less_approved(
     vaultFactory,
@@ -352,13 +321,14 @@ def test_migrate_shares_less_approved(
         controllerFactoryV1,
         vaultFactory,
         vaultFactoryV1,
-        StrategyDForceDAI
+        StrategyDForceDAI,
     )
 
     vaultA.approve(vaultMigrator, tokenAmount - Wei("1 ether"), {"from": user})
 
     with brownie.reverts("ERC20: transfer amount exceeds allowance"):
         vaultMigrator.migrateShares(vaultA, vaultB, tokenAmount, {"from": user})
+
 
 def test_migrate_shares_all_approved(
     vaultFactory,
@@ -379,7 +349,7 @@ def test_migrate_shares_all_approved(
         controllerFactoryV1,
         vaultFactory,
         vaultFactoryV1,
-        StrategyDForceDAI
+        StrategyDForceDAI,
     )
 
     amountToMigrate = tokenAmount - Wei("1 ether")
@@ -390,28 +360,21 @@ def test_migrate_shares_all_approved(
         vaultMigrator.migrateShares(vaultA, vaultB, amountToMigrate, {"from": user})
 
     checkSuccesfullMigration(
-        migrateTx,
-        user,
-        amountToMigrate,
-        vaultMigrator,
-        vaultA,
-        vaultB
+        migrateTx, user, amountToMigrate, vaultMigrator, vaultA, vaultB
     )
 
+
 def test_migrate_shares_with_lower_permit(
-    vaultFactory,
-    tokenFactory, 
-    tokenOwner, 
-    vaultMigrator, 
-    chain, 
-    accounts
+    vaultFactory, tokenFactory, tokenOwner, vaultMigrator, chain, accounts
 ):
-    user, userForSignature, token, tokenAmount, vaultA, vaultB = beforeTestMigrateWithPermit(
-        accounts,
-        tokenOwner,
-        tokenFactory,
-        vaultFactory
-    )
+    (
+        user,
+        userForSignature,
+        token,
+        tokenAmount,
+        vaultA,
+        vaultB,
+    ) = beforeTestMigrateWithPermit(accounts, tokenOwner, tokenFactory, vaultFactory)
 
     # Migrate in vaultB
     deadline = chain[-1].timestamp + 3600
@@ -427,28 +390,21 @@ def test_migrate_shares_with_lower_permit(
 
     with brownie.reverts():
         vaultMigrator.migrateSharesWithPermit(
-            vaultA, 
-            vaultB, 
-            tokenAmount,
-            deadline, 
-            signature, 
-            {"from": user}
+            vaultA, vaultB, tokenAmount, deadline, signature, {"from": user}
         )
 
+
 def test_migrate_shares_with_permit(
-    vaultFactory,
-    tokenFactory, 
-    tokenOwner, 
-    vaultMigrator, 
-    chain, 
-    accounts
+    vaultFactory, tokenFactory, tokenOwner, vaultMigrator, chain, accounts
 ):
-    user, userForSignature, token, tokenAmount, vaultA, vaultB = beforeTestMigrateWithPermit(
-        accounts,
-        tokenOwner,
-        tokenFactory,
-        vaultFactory
-    )
+    (
+        user,
+        userForSignature,
+        token,
+        tokenAmount,
+        vaultA,
+        vaultB,
+    ) = beforeTestMigrateWithPermit(accounts, tokenOwner, tokenFactory, vaultFactory)
 
     amountToMigrate = tokenAmount - Wei("1 ether")
 
@@ -466,22 +422,13 @@ def test_migrate_shares_with_permit(
 
     def migrateTx():
         vaultMigrator.migrateSharesWithPermit(
-            vaultA, 
-            vaultB, 
-            amountToMigrate,
-            deadline, 
-            signature, 
-            {"from": user}
+            vaultA, vaultB, amountToMigrate, deadline, signature, {"from": user}
         )
-    
+
     checkSuccesfullMigration(
-        migrateTx,
-        user,
-        amountToMigrate,
-        vaultMigrator,
-        vaultA,
-        vaultB
+        migrateTx, user, amountToMigrate, vaultMigrator, vaultA, vaultB
     )
+
 
 def test_migrate_from_v1_to_v1_different_token(
     vaultFactory,
@@ -493,7 +440,7 @@ def test_migrate_from_v1_to_v1_different_token(
     vaultMigrator,
     gov,
     accounts,
-    tokenFactory
+    tokenFactory,
 ):
     token = Token.at("0x6B175474E89094C44Da98b954EedeAC495271d0F")  # DAI
     tokenOwner = accounts.at(
@@ -518,14 +465,15 @@ def test_migrate_from_v1_to_v1_different_token(
     # # Deposit in vaultA
     token.approve(vaultA, tokenAmount, {"from": user})
     vaultA.deposit(tokenAmount, {"from": user})
-    
+
     vaultA.approve(vaultMigrator, tokenAmount, {"from": user})
 
     with brownie.reverts("Vaults must have the same token"):
         vaultMigrator.internalMigrate(vaultA, vaultB, tokenAmount, {"from": user})
 
+
 # TODO: FIx
-# def test_migrate_from_v1_to_v1_same_token( 
+# def test_migrate_from_v1_to_v1_same_token(
 #     vaultFactory,
 #     vaultFactoryV1,
 #     controllerFactoryV1,
@@ -561,10 +509,11 @@ def test_migrate_from_v1_to_v1_different_token(
 #     # Deposit in vaultA
 #     token.approve(vaultA, tokenAmount, {"from": user})
 #     vaultA.deposit(tokenAmount, {"from": user})
-    
+
 #     vaultA.approve(vaultMigrator, tokenAmount, {"from": user})
 
 #     vaultMigrator.internalMigrate(vaultA, vaultB, tokenAmount, {"from": user})
+
 
 def test_migrate_from_v1_to_v2_different_token(
     vaultFactory,
@@ -605,13 +554,9 @@ def test_migrate_from_v1_to_v2_different_token(
         vaultMigrator.internalMigrate(vaultA, vaultB, tokenAmount, {"from": user})
 
     checkSuccesfullMigration(
-        migrateTx,
-        user,
-        tokenAmount,
-        vaultMigrator,
-        vaultA,
-        vaultB
+        migrateTx, user, tokenAmount, vaultMigrator, vaultA, vaultB
     )
+
 
 def test_migrate_from_v1_to_v2_same_token(
     vaultFactory,
@@ -650,15 +595,11 @@ def test_migrate_from_v1_to_v2_same_token(
 
     def migrateTx():
         vaultMigrator.internalMigrate(vaultA, vaultB, tokenAmount, {"from": user})
-    
+
     checkSuccesfullMigration(
-        migrateTx,
-        user,
-        tokenAmount,
-        vaultMigrator,
-        vaultA,
-        vaultB
+        migrateTx, user, tokenAmount, vaultMigrator, vaultA, vaultB
     )
+
 
 def test_migrate_from_v2_to_v2_different_token(
     vaultFactory, tokenFactory, tokenOwner, user, vaultMigrator
@@ -682,6 +623,7 @@ def test_migrate_from_v2_to_v2_different_token(
     with brownie.reverts("Vaults must have the same token"):
         vaultMigrator.internalMigrate(vaultA, vaultB, tokenAmount, {"from": user})
 
+
 def test_migrate_from_v2_to_v2_same_token(
     vaultFactory, tokenFactory, tokenOwner, user, vaultMigrator
 ):
@@ -704,10 +646,5 @@ def test_migrate_from_v2_to_v2_same_token(
         vaultMigrator.internalMigrate(vaultA, vaultB, tokenAmount, {"from": user})
 
     checkSuccesfullMigration(
-        migrateTx,
-        user,
-        tokenAmount,
-        vaultMigrator,
-        vaultA,
-        vaultB
+        migrateTx, user, tokenAmount, vaultMigrator, vaultA, vaultB
     )

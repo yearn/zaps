@@ -1,25 +1,31 @@
 import pytest
 from brownie import config
 
+
 @pytest.fixture
 def tokenOwner(accounts):
     yield accounts[0]
+
 
 @pytest.fixture
 def gov(accounts):
     yield accounts[1]
 
+
 @pytest.fixture
 def rewards(gov):
     yield gov
+
 
 @pytest.fixture
 def guardian(accounts):
     yield accounts[2]
 
+
 @pytest.fixture
 def user(accounts):
     yield accounts[3]
+
 
 @pytest.fixture
 def tokenFactory(tokenOwner, Token):
