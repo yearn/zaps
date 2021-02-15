@@ -2,7 +2,7 @@
 
 pragma solidity 0.6.12;
 
-import "../interfaces/IVaultAPI.sol";
+import "../../../interfaces/IVaultAPI.sol";
 
 import {
     SafeERC20,

@@ -3,9 +3,9 @@
 pragma solidity 0.6.12;
 
 import "./VaultSwap.sol";
-import "./Governable.sol";
+import "../../Governable.sol";
 
-import "../interfaces/IRegistry.sol";
+import "../../../interfaces/IRegistry.sol";
 
 /**
 
