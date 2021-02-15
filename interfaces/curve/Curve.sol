@@ -46,6 +46,8 @@ interface ICurveFi {
 
     function balances(int128) external view returns (uint256);
 
+    function balances(uint256) external view returns (uint256);
+
     function get_dy(
         int128 from,
         int128 to,

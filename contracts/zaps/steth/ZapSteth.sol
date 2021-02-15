@@ -14,20 +14,13 @@ import {
     IERC20,
     Address
 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "../BaseZap.sol";
 
-interface IYVault is IERC20 {
-    function deposit(uint256 amount, address recipient) external;
-
-    function withdraw() external;
-}
-
-contract ZapSteth is Ownable {
+contract ZapSteth is BaseZap {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
 
-    IYVault public yVault =
-        IYVault(address(0xdCD90C7f6324cfa40d7169ef80b12031770B4325));
     ISteth public stETH =
         ISteth(address(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84));
 
@@ -35,13 +28,13 @@ contract ZapSteth is Ownable {
     ICurveFi public StableSwapSTETH =
         ICurveFi(address(0xDC24316b9AE028F1497c275EB9192a3Ea0f67022));
 
-    IERC20 public want =
-        IERC20(address(0x06325440D014e39736583c165C2963BA99fAf14E));
-
     uint256 public constant DEFAULT_SLIPPAGE = 50;
     bool private _noReentry = false;
 
     constructor() public Ownable() {
+        want = IERC20(address(0x06325440D014e39736583c165C2963BA99fAf14E));
+        yVault = IYVault(address(0xdCD90C7f6324cfa40d7169ef80b12031770B4325));
+
         want.safeApprove(address(yVault), uint256(-1));
         want.safeApprove(address(StableSwapSTETH), uint256(-1));
         stETH.approve(address(StableSwapSTETH), uint256(-1));
@@ -55,12 +48,14 @@ contract ZapSteth is Ownable {
         _zapEthIn(DEFAULT_SLIPPAGE);
     }
 
-    function updateVaultAddress(address _vault) external onlyOwner {
-        yVault = IYVault(_vault);
-        want.safeApprove(_vault, uint256(-1));
+    function zapEthIn() external payable override {
+        if (_noReentry) {
+            return;
+        }
+        _zapEthIn(DEFAULT_SLIPPAGE);
     }
 
-    function zapEthIn(uint256 slippageAllowance) external payable {
+    function zapEthIn(uint256 slippageAllowance) external payable override {
         if (_noReentry) {
             return;
         }
@@ -124,8 +119,13 @@ contract ZapSteth is Ownable {
         yVault.deposit(outAmount, msg.sender);
     }
 
+    function zapEthOut(uint256 lpTokenAmount) external override {
+        _zapOut(lpTokenAmount, DEFAULT_SLIPPAGE, 0);
+    }
+
     function zapEthOut(uint256 lpTokenAmount, uint256 slippageAllowance)
         external
+        override
     {
         _zapOut(lpTokenAmount, slippageAllowance, 0);
     }
