@@ -43,17 +43,15 @@ def generate_permit(vault, owner: Account, spender: Account, value, nonce, deadl
     }
     return encode_structured_data(data)
 
-
-def test_migrate_all_not_approved(
-    vaultFactory,
-    vaultFactoryV1,
-    controllerFactoryV1,
-    Token,
-    StrategyDForceDAI,
+def beforeTestMigrateAll(
     user,
-    vaultMigrator,
     gov,
     accounts,
+    Token,
+    controllerFactoryV1,
+    vaultFactory,
+    vaultFactoryV1,
+    StrategyDForceDAI,
 ):
     token = Token.at("0x6B175474E89094C44Da98b954EedeAC495271d0F")  # DAI
     tokenOwner = accounts.at(
@@ -76,6 +74,62 @@ def test_migrate_all_not_approved(
     # Deposit in vaultA
     token.approve(vaultA, tokenAmount, {"from": user})
     vaultA.deposit(tokenAmount, {"from": user})
+
+    yield token
+    yield tokenOwner
+    yield tokenAmount
+    yield vaultA
+    yield vaultB
+
+def beforeTestMigrateWithPermit(
+    accounts,
+    tokenOwner,
+    tokenFactory,
+    vaultFactory
+):
+    userForSignature = Account.create()
+    user = accounts.at(userForSignature.address, force=True)
+
+    token = tokenFactory()
+    vaultA = vaultFactory(token)
+    vaultB = vaultFactory(token)
+
+    # Give user some funds
+    tokenAmount = Wei("10 ether")
+    token.transfer(user, tokenAmount, {"from": tokenOwner})
+
+    # Deposit in vaultA
+    token.approve(vaultA, tokenAmount, {"from": user})
+    vaultA.deposit({"from": user})
+
+    yield user
+    yield userForSignature
+    yield token
+    yield tokenAmount
+    yield vaultA 
+    yield vaultB
+
+def test_migrate_all_not_approved(
+    vaultFactory,
+    vaultFactoryV1,
+    controllerFactoryV1,
+    Token,
+    StrategyDForceDAI,
+    user,
+    vaultMigrator,
+    gov,
+    accounts,
+):
+    token, tokenOwner, tokenAmount, vaultA, vaultB = beforeTestMigrateAll(
+        user,
+        gov,
+        accounts,
+        Token,
+        controllerFactoryV1,
+        vaultFactory,
+        vaultFactoryV1,
+        StrategyDForceDAI
+    )
 
     with brownie.reverts("ERC20: transfer amount exceeds allowance"):
         vaultMigrator.migrateAll(vaultA, vaultB, {"from": user})
@@ -91,6 +145,282 @@ def test_migrate_all_less_approved(
     gov,
     accounts,
 ):
+    token, tokenOwner, tokenAmount, vaultA, vaultB = beforeTestMigrateAll(
+        user,
+        gov,
+        accounts,
+        Token,
+        controllerFactoryV1,
+        vaultFactory,
+        vaultFactoryV1,
+        StrategyDForceDAI
+    )
+
+    vaultA.approve(vaultMigrator, tokenAmount - Wei("1 ether"), {"from": user})
+
+    with brownie.reverts("ERC20: transfer amount exceeds allowance"):
+        vaultMigrator.migrateAll(vaultA, vaultB, {"from": user})
+
+def test_migrate_all_approved(
+    vaultFactory,
+    vaultFactoryV1,
+    controllerFactoryV1,
+    Token,
+    StrategyDForceDAI,
+    user,
+    vaultMigrator,
+    gov,
+    accounts,
+):
+    token, tokenOwner, tokenAmount, vaultA, vaultB = beforeTestMigrateAll(
+        user,
+        gov,
+        accounts,
+        Token,
+        controllerFactoryV1,
+        vaultFactory,
+        vaultFactoryV1,
+        StrategyDForceDAI
+    )
+
+    vaultA.approve(vaultMigrator, tokenAmount, {"from": user})
+
+    vaultMigrator.migrateAll(vaultA, vaultB, {"from": user})
+
+def test_migrate_all_with_lower_permit(    
+    vaultFactory,
+    tokenFactory, 
+    tokenOwner, 
+    vaultMigrator, 
+    chain, 
+    accounts
+):
+
+    user, userForSignature, token, tokenAmount, vaultA, vaultB = beforeTestMigrateWithPermit(
+        accounts,
+        tokenOwner,
+        tokenFactory,
+        vaultFactory
+    )
+
+    # Migrate in vaultB
+    deadline = chain[-1].timestamp + 3600
+    permit = generate_permit(
+        vaultA,
+        userForSignature,
+        vaultMigrator,
+        tokenAmount - 1,
+        vaultA.nonces(user),
+        deadline,
+    )
+    signature = userForSignature.sign_message(permit).signature
+
+    with brownie.reverts():
+        vaultMigrator.migrateAllWithPermit(
+            vaultA, 
+            vaultB, 
+            deadline, 
+            signature, 
+            {"from": user}
+        )
+
+def test_migrate_all_with_permit(    
+    vaultFactory,
+    tokenFactory, 
+    tokenOwner, 
+    vaultMigrator, 
+    chain, 
+    accounts
+):
+    user, userForSignature, token, tokenAmount, vaultA, vaultB = beforeTestMigrateWithPermit(
+        accounts,
+        tokenOwner,
+        tokenFactory,
+        vaultFactory
+    )
+
+    # Migrate in vaultB
+    deadline = chain[-1].timestamp + 3600
+    permit = generate_permit(
+        vaultA,
+        userForSignature,
+        vaultMigrator,
+        tokenAmount,
+        vaultA.nonces(user),
+        deadline,
+    )
+    signature = userForSignature.sign_message(permit).signature
+
+    vaultMigrator.migrateAllWithPermit(
+        vaultA, 
+        vaultB, 
+        deadline, 
+        signature, 
+        {"from": user}
+    )
+
+def test_migrate_shares_no_approve(
+    vaultFactory,
+    vaultFactoryV1,
+    controllerFactoryV1,
+    Token,
+    StrategyDForceDAI,
+    user,
+    vaultMigrator,
+    gov,
+    accounts,
+):
+    token, tokenOwner, tokenAmount, vaultA, vaultB = beforeTestMigrateAll(
+        user,
+        gov,
+        accounts,
+        Token,
+        controllerFactoryV1,
+        vaultFactory,
+        vaultFactoryV1,
+        StrategyDForceDAI
+    )
+    with brownie.reverts("ERC20: transfer amount exceeds allowance"):
+        vaultMigrator.migrateShares(vaultA, vaultB, tokenAmount, {"from": user})
+
+def test_migrate_shares_less_approved(
+    vaultFactory,
+    vaultFactoryV1,
+    controllerFactoryV1,
+    Token,
+    StrategyDForceDAI,
+    user,
+    vaultMigrator,
+    gov,
+    accounts,
+):
+    token, tokenOwner, tokenAmount, vaultA, vaultB = beforeTestMigrateAll(
+        user,
+        gov,
+        accounts,
+        Token,
+        controllerFactoryV1,
+        vaultFactory,
+        vaultFactoryV1,
+        StrategyDForceDAI
+    )
+
+    vaultA.approve(vaultMigrator, tokenAmount - Wei("1 ether"), {"from": user})
+
+    with brownie.reverts("ERC20: transfer amount exceeds allowance"):
+        vaultMigrator.migrateShares(vaultA, vaultB, tokenAmount, {"from": user})
+
+def test_migrate_shares_all_approved(
+    vaultFactory,
+    vaultFactoryV1,
+    controllerFactoryV1,
+    Token,
+    StrategyDForceDAI,
+    user,
+    vaultMigrator,
+    gov,
+    accounts,
+):
+    token, tokenOwner, tokenAmount, vaultA, vaultB = beforeTestMigrateAll(
+        user,
+        gov,
+        accounts,
+        Token,
+        controllerFactoryV1,
+        vaultFactory,
+        vaultFactoryV1,
+        StrategyDForceDAI
+    )
+
+    vaultA.approve(vaultMigrator, tokenAmount - Wei("1 ether"), {"from": user})
+
+    vaultMigrator.migrateShares(vaultA, vaultB, tokenAmount - Wei("1 ether"), {"from": user})
+
+def test_migrate_shares_with_lower_permit(
+    vaultFactory,
+    tokenFactory, 
+    tokenOwner, 
+    vaultMigrator, 
+    chain, 
+    accounts
+):
+    user, userForSignature, token, tokenAmount, vaultA, vaultB = beforeTestMigrateWithPermit(
+        accounts,
+        tokenOwner,
+        tokenFactory,
+        vaultFactory
+    )
+
+    # Migrate in vaultB
+    deadline = chain[-1].timestamp + 3600
+    permit = generate_permit(
+        vaultA,
+        userForSignature,
+        vaultMigrator,
+        tokenAmount - Wei("1 ether"),
+        vaultA.nonces(user),
+        deadline,
+    )
+    signature = userForSignature.sign_message(permit).signature
+
+    with brownie.reverts():
+        vaultMigrator.migrateSharesWithPermit(
+            vaultA, 
+            vaultB, 
+            tokenAmount,
+            deadline, 
+            signature, 
+            {"from": user}
+        )
+
+def test_migrate_shares_with_permit(
+    vaultFactory,
+    tokenFactory, 
+    tokenOwner, 
+    vaultMigrator, 
+    chain, 
+    accounts
+):
+    user, userForSignature, token, tokenAmount, vaultA, vaultB = beforeTestMigrateWithPermit(
+        accounts,
+        tokenOwner,
+        tokenFactory,
+        vaultFactory
+    )
+
+    # Migrate in vaultB
+    deadline = chain[-1].timestamp + 3600
+    permit = generate_permit(
+        vaultA,
+        userForSignature,
+        vaultMigrator,
+        tokenAmount,
+        vaultA.nonces(user),
+        deadline,
+    )
+    signature = userForSignature.sign_message(permit).signature
+
+    vaultMigrator.migrateSharesWithPermit(
+        vaultA, 
+        vaultB, 
+        tokenAmount,
+        deadline, 
+        signature, 
+        {"from": user}
+    )
+
+def test_migrate_from_v1_to_v1_different_token(
+    vaultFactory,
+    vaultFactoryV1,
+    controllerFactoryV1,
+    Token,
+    StrategyDForceDAI,
+    user,
+    vaultMigrator,
+    gov,
+    accounts,
+    tokenFactory
+):
     token = Token.at("0x6B175474E89094C44Da98b954EedeAC495271d0F")  # DAI
     tokenOwner = accounts.at(
         "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643", force=True
@@ -102,23 +432,67 @@ def test_migrate_all_less_approved(
     vaultA = vaultFactoryV1(token, controller)
     controller.setStrategy(token, strategy, {"from": gov})
 
-    # Create target V2 vault
-    vaultB = vaultFactory(token)
+    # Create another V1 Vault
+    tokenVaultB = tokenFactory()
+    vaultB = vaultFactoryV1(tokenVaultB, controller)
+    controller.setStrategy(tokenVaultB, strategy, {"from": gov})
 
     # Give user some funds
     tokenAmount = Wei("10 ether")
     token.transfer(user, tokenAmount, {"from": tokenOwner})
 
-    # Deposit in vaultA
+    # # Deposit in vaultA
     token.approve(vaultA, tokenAmount, {"from": user})
     vaultA.deposit(tokenAmount, {"from": user})
+    
+    vaultA.approve(vaultMigrator, tokenAmount, {"from": user})
 
-    vaultA.approve(vaultMigrator, "9 ether", {"from": user})
+    with brownie.reverts("Vaults must have the same token"):
+        vaultMigrator.internalMigrate(vaultA, vaultB, tokenAmount, {"from": user})
 
-    with brownie.reverts("ERC20: transfer amount exceeds allowance"):
-        vaultMigrator.migrateAll(vaultA, vaultB, {"from": user})
+# TODO: FIx
+# def test_migrate_from_v1_to_v1_same_token( 
+#     vaultFactory,
+#     vaultFactoryV1,
+#     controllerFactoryV1,
+#     Token,
+#     StrategyDForceDAI,
+#     user,
+#     vaultMigrator,
+#     gov,
+#     accounts,
+#     tokenFactory
+# ):
+#     token = Token.at("0x6B175474E89094C44Da98b954EedeAC495271d0F")  # DAI
+#     tokenOwner = accounts.at(
+#         "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643", force=True
+#     )  # whale for DAI
 
-def test_migrate_all_approved(
+#     # Create a V1 Vault
+#     controller = controllerFactoryV1()
+#     strategy = gov.deploy(StrategyDForceDAI, controller)
+#     vaultA = vaultFactoryV1(token, controller)
+#     controller.setStrategy(token, strategy, {"from": gov})
+
+#     # Create another V1 Vault
+#     controllerB = controllerFactoryV1()
+#     strategyB = gov.deploy(StrategyDForceDAI, controllerB)
+#     vaultB = vaultFactoryV1(token, controllerB)
+#     controllerB.setStrategy(token, strategyB, {"from": gov})
+
+#     # Give user some funds
+#     tokenAmount = Wei("10 ether")
+#     token.transfer(user, tokenAmount, {"from": tokenOwner})
+
+#     # Deposit in vaultA
+#     token.approve(vaultA, tokenAmount, {"from": user})
+#     vaultA.deposit(tokenAmount, {"from": user})
+    
+#     vaultA.approve(vaultMigrator, tokenAmount, {"from": user})
+
+#     vaultMigrator.internalMigrate(vaultA, vaultB, tokenAmount, {"from": user})
+
+def test_migrate_from_v1_to_v2_different_token(
     vaultFactory,
     vaultFactoryV1,
     controllerFactoryV1,
@@ -152,22 +526,31 @@ def test_migrate_all_approved(
     vaultA.deposit(tokenAmount, {"from": user})
 
     vaultA.approve(vaultMigrator, tokenAmount, {"from": user})
+    vaultMigrator.internalMigrate(vaultA, vaultB, tokenAmount, {"from": user})
 
-    vaultMigrator.migrateAll(vaultA, vaultB, {"from": user})
-
-def test_migrate_all_with_lower_permit(    
+def test_migrate_from_v1_to_v2_same_token(
     vaultFactory,
-    tokenFactory, 
-    tokenOwner, 
-    vaultMigrator, 
-    chain, 
-    accounts
+    vaultFactoryV1,
+    controllerFactoryV1,
+    Token,
+    StrategyDForceDAI,
+    user,
+    vaultMigrator,
+    gov,
+    accounts,
 ):
-    userForSignature = Account.create()
-    user = accounts.at(userForSignature.address, force=True)
+    token = Token.at("0x6B175474E89094C44Da98b954EedeAC495271d0F")  # DAI
+    tokenOwner = accounts.at(
+        "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643", force=True
+    )  # whale for DAI
 
-    token = tokenFactory()
-    vaultA = vaultFactory(token)
+    # Create a V1 Vault
+    controller = controllerFactoryV1()
+    strategy = gov.deploy(StrategyDForceDAI, controller)
+    vaultA = vaultFactoryV1(token, controller)
+    controller.setStrategy(token, strategy, {"from": gov})
+
+    # Create target V2 vault
     vaultB = vaultFactory(token)
 
     # Give user some funds
@@ -176,46 +559,42 @@ def test_migrate_all_with_lower_permit(
 
     # Deposit in vaultA
     token.approve(vaultA, tokenAmount, {"from": user})
+    vaultA.deposit(tokenAmount, {"from": user})
+
+    vaultA.approve(vaultMigrator, tokenAmount, {"from": user})
+    vaultMigrator.internalMigrate(vaultA, vaultB, tokenAmount, {"from": user})
+
+def test_migrate_from_v2_to_v2_different_token(
+    vaultFactory, tokenFactory, tokenOwner, user, vaultMigrator
+):
+    tokenA = tokenFactory()
+    tokenB = tokenFactory()
+    vaultA = vaultFactory(tokenA)
+    vaultB = vaultFactory(tokenB)
+
+    # Give user some funds
+    tokenAmount = "10 ether"
+    tokenA.transfer(user, tokenAmount, {"from": tokenOwner})
+
+    # Deposit in vaultA
+    tokenA.approve(vaultA, tokenAmount, {"from": user})
     vaultA.deposit({"from": user})
 
     # Migrate in vaultB
-    deadline = chain[-1].timestamp + 3600
-    permit = generate_permit(
-        vaultA,
-        userForSignature,
-        vaultMigrator,
-        tokenAmount - 1,
-        vaultA.nonces(user),
-        deadline,
-    )
-    signature = userForSignature.sign_message(permit).signature
+    vaultA.approve(vaultMigrator, tokenAmount, {"from": user})
 
-    with brownie.reverts():
-        vaultMigrator.migrateAllWithPermit(
-            vaultA, 
-            vaultB, 
-            deadline, 
-            signature, 
-            {"from": user}
-        )
+    with brownie.reverts("Vaults must have the same token"):
+        vaultMigrator.internalMigrate(vaultA, vaultB, tokenAmount, {"from": user})
 
-def test_migrate_all_with_permit(    
-    vaultFactory,
-    tokenFactory, 
-    tokenOwner, 
-    vaultMigrator, 
-    chain, 
-    accounts
+def test_migrate_from_v2_to_v2_same_token(
+    vaultFactory, tokenFactory, tokenOwner, user, vaultMigrator
 ):
-    userForSignature = Account.create()
-    user = accounts.at(userForSignature.address, force=True)
-
     token = tokenFactory()
     vaultA = vaultFactory(token)
     vaultB = vaultFactory(token)
 
     # Give user some funds
-    tokenAmount = Wei("10 ether")
+    tokenAmount = "10 ether"
     token.transfer(user, tokenAmount, {"from": tokenOwner})
 
     # Deposit in vaultA
@@ -223,178 +602,6 @@ def test_migrate_all_with_permit(
     vaultA.deposit({"from": user})
 
     # Migrate in vaultB
-    deadline = chain[-1].timestamp + 3600
-    permit = generate_permit(
-        vaultA,
-        userForSignature,
-        vaultMigrator,
-        tokenAmount,
-        vaultA.nonces(user),
-        deadline,
-    )
-    signature = userForSignature.sign_message(permit).signature
+    vaultA.approve(vaultMigrator, tokenAmount, {"from": user})
 
-    vaultMigrator.migrateAllWithPermit(
-        vaultA, 
-        vaultB, 
-        deadline, 
-        signature, 
-        {"from": user}
-    )
-
-# def test_migrate_shares_no_approve():
-#     pass
-
-# def test_migrate_shares_less_approved():
-#     pass
-
-# def test_migrate_shares_all_approved():
-#     pass
-
-# def test_migrate_shares_permit():
-#     pass
-
-# def test_migrate_from_v1_to_v1_different_token():
-#     pass
-
-# def test_migrate_from_v1_to_v1_same_token():
-#     pass
-
-# def test_migrate_from_v1_to_v2_different_token():
-#     pass
-
-# def test_migrate_from_v1_to_v2_same_token():
-#     pass
-
-# def test_migrate_from_v2_to_v2_different_token():
-#     pass
-
-# def test_migrate_from_v2_to_v2_same_token():
-#     pass
-
-
-# def test_swap_v1(
-#     vaultFactory,
-#     vaultFactoryV1,
-#     controllerFactoryV1,
-#     Token,
-#     StrategyDForceDAI,
-#     user,
-#     vaultMigrator,
-#     gov,
-#     accounts,
-# ):
-#     token = Token.at("0x6B175474E89094C44Da98b954EedeAC495271d0F")  # DAI
-#     tokenOwner = accounts.at(
-#         "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643", force=True
-#     )  # whale for DAI
-
-#     # Create a V1 Vault
-#     controller = controllerFactoryV1()
-#     strategy = gov.deploy(StrategyDForceDAI, controller)
-#     vaultA = vaultFactoryV1(token, controller)
-#     controller.setStrategy(token, strategy, {"from": gov})
-
-#     # Create target V2 vault
-#     vaultB = vaultFactory(token)
-
-#     # Give user some funds
-#     tokenAmount = "10 ether"
-#     token.transfer(user, tokenAmount, {"from": tokenOwner})
-
-#     # Deposit in vaultA
-#     token.approve(vaultA, tokenAmount, {"from": user})
-#     vaultA.deposit(tokenAmount, {"from": user})
-
-#     # Migrate in vaultB
-#     balanceVaultA = vaultA.balanceOf(user)
-
-#     vaultA.approve(vaultMigrator, balanceVaultA, {"from": user})
-#     vaultMigrator.swap(vaultA, vaultB, {"from": user})
-
-#     assert vaultA.balanceOf(user) == 0
-#     assert vaultB.balanceOf(user) > 0
-
-
-# def test_swap_approve(vaultFactory, tokenFactory, tokenOwner, user, d):
-#     token = tokenFactory()
-#     vaultA = vaultFactory(token)
-#     vaultB = vaultFactory(token)
-
-#     # Give user some funds
-#     tokenAmount = "10 ether"
-#     token.transfer(user, tokenAmount, {"from": tokenOwner})
-
-#     # Deposit in vaultA
-#     token.approve(vaultA, tokenAmount, {"from": user})
-#     vaultA.deposit({"from": user})
-
-#     # Migrate in vaultB
-#     balanceVaultA = vaultA.balanceOf(user)
-
-#     vaultA.approve(d, balanceVaultA, {"from": user})
-#     d.swap(vaultA, vaultB, {"from": user})
-
-#     assert vaultA.balanceOf(user) == 0
-#     assert vaultB.balanceOf(user) > 0
-
-
-# def test_swap_permit(
-#     vaultFactory, tokenFactory, tokenOwner, d, chain, accounts
-# ):
-#     userForSignature = Account.create()
-#     user = accounts.at(userForSignature.address, force=True)
-
-#     token = tokenFactory()
-#     vaultA = vaultFactory(token)
-#     vaultB = vaultFactory(token)
-
-#     # Give user some funds
-#     tokenAmount = "10 ether"
-#     token.transfer(user, tokenAmount, {"from": tokenOwner})
-
-#     # Deposit in vaultA
-#     token.approve(vaultA, tokenAmount, {"from": user})
-#     vaultA.deposit({"from": user})
-
-#     # Migrate in vaultB
-#     balanceVaultA = vaultA.balanceOf(user)
-
-#     deadline = chain[-1].timestamp + 3600
-#     permit = generate_permit(
-#         vaultA,
-#         userForSignature,
-#         d,
-#         balanceVaultA,
-#         vaultA.nonces(user),
-#         deadline,
-#     )
-#     signature = userForSignature.sign_message(permit).signature
-
-#     d.swap(vaultA, vaultB, deadline, signature, {"from": user})
-
-#     assert vaultA.balanceOf(user) == 0
-#     assert vaultB.balanceOf(user) > 0
-
-
-# def test_swap_wrong_vaults(vaultFactory, tokenFactory, tokenOwner, user, d):
-#     token = tokenFactory()
-#     tokenWrong = tokenFactory()
-#     vaultA = vaultFactory(token)
-#     vaultB = vaultFactory(tokenWrong)
-
-#     # Give user some funds
-#     tokenAmount = "10 ether"
-#     token.transfer(user, tokenAmount, {"from": tokenOwner})
-
-#     # Deposit in vaultA
-#     token.approve(vaultA, tokenAmount, {"from": user})
-#     vaultA.deposit({"from": user})
-
-#     # Migrate in vaultB
-#     balanceVaultA = vaultA.balanceOf(user)
-
-#     vaultA.approve(d, balanceVaultA, {"from": user})
-
-#     with brownie.reverts("Vaults must have the same token"):
-#         d.swap(vaultA, vaultB, {"from": user})
+    vaultMigrator.internalMigrate(vaultA, vaultB, tokenAmount, {"from": user})
