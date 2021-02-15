@@ -10,13 +10,13 @@ def test_swap_v1_not_registered_vault(
     Token,
     StrategyDForceDAI,
     user,
-    TrustedVaultSwap,
+    TrustedVaultMigrator,
     gov,
     accounts,
 ):
     # Registry
     registry = "0xe15461b18ee31b7379019dc523231c57d1cbc18c"
-    vaultSwap = gov.deploy(TrustedVaultSwap, registry)
+    vaultMigrator = gov.deploy(TrustedVaultMigrator, registry)
 
     token = Token.at("0x6B175474E89094C44Da98b954EedeAC495271d0F")  # DAI
     tokenOwner = accounts.at(
@@ -43,10 +43,10 @@ def test_swap_v1_not_registered_vault(
     # Migrate in vaultB
     balanceVaultA = vaultA.balanceOf(user)
 
-    vaultA.approve(vaultSwap, balanceVaultA, {"from": user})
+    vaultA.approve(vaultMigrator, balanceVaultA, {"from": user})
 
     with brownie.reverts("Target vault should be the latest for token"):
-        vaultSwap.swap(vaultA, vaultB, {"from": user})
+        vaultMigrator.migrateAll(vaultA, vaultB, {"from": user})
 
 
 def test_swap_v1_registered_vault(
@@ -56,13 +56,13 @@ def test_swap_v1_registered_vault(
     Token,
     StrategyDForceDAI,
     user,
-    TrustedVaultSwap,
+    TrustedVaultMigrator,
     gov,
     accounts,
 ):
     # Registry
     registry = "0xe15461b18ee31b7379019dc523231c57d1cbc18c"
-    vaultSwap = gov.deploy(TrustedVaultSwap, registry)
+    vaultMigrator = gov.deploy(TrustedVaultMigrator, registry)
 
     token = Token.at("0x6B175474E89094C44Da98b954EedeAC495271d0F")  # DAI
     tokenOwner = accounts.at(
@@ -94,10 +94,10 @@ def test_swap_v1_registered_vault(
     balanceVaultA = vaultA.balanceOf(user)
     balanceVaultBbefore = token.balanceOf(vaultB)
 
-    vaultA.approve(vaultSwap, balanceVaultA, {"from": user})
+    vaultA.approve(vaultMigrator, balanceVaultA, {"from": user})
     print(f"Vault A balance '{vaultA.balanceOf(user)}' before")
     print(f"Vault B Token balance '{token.balanceOf(vaultB)}' before")
-    vaultSwap.swap(vaultA, vaultB, {"from": user})
+    vaultMigrator.migrateAll(vaultA, vaultB, {"from": user})
 
     assert vaultA.balanceOf(user) == 0
     print(f"Vault B balance '{vaultB.balanceOf(user)}' after")

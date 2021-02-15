@@ -1,10 +1,10 @@
 import brownie
 import pytest
-from brownie import chain, web3
+from brownie import chain, web3, Wei
 
 
 def test_sweep(
-    interface, Token, user, TrustedVaultSwap, gov, accounts,
+    interface, Token, user, TrustedVaultMigrator, gov, accounts,
 ):
     # Registry
     registry = "0xe15461b18ee31b7379019dc523231c57d1cbc18c"
@@ -15,22 +15,22 @@ def test_sweep(
         "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643", force=True
     )  # whale for DAI
 
-    vaultSwap = gov.deploy(TrustedVaultSwap, registry)
+    vaultMigrator = gov.deploy(TrustedVaultMigrator, registry)
     # Give user some funds
-    tokenAmount = "10 ether"
-    token.transfer(vaultSwap, tokenAmount, {"from": tokenOwner})
+    tokenAmount = Wei("10 ether")
+    token.transfer(vaultMigrator, tokenAmount, {"from": tokenOwner})
 
-    assert token.balanceOf(vaultSwap) == tokenAmount
+    assert token.balanceOf(vaultMigrator) == tokenAmount
     balanceBefore = token.balanceOf(ychad)
 
-    vaultSwap.sweep(token.address, {"from": ychad})
+    vaultMigrator.sweep(token.address, {"from": ychad})
 
-    assert token.balanceOf(vaultSwap) == 0
+    assert token.balanceOf(vaultMigrator) == 0
     assert token.balanceOf(ychad) - balanceBefore == tokenAmount
 
 
 def test_sweep_from_rando(
-    interface, Token, user, TrustedVaultSwap, gov, accounts,
+    interface, Token, user, TrustedVaultMigrator, gov, accounts,
 ):
     # Registry v2
     registry = "0xe15461b18ee31b7379019dc523231c57d1cbc18c"
@@ -39,10 +39,10 @@ def test_sweep_from_rando(
         "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643", force=True
     )  # whale for DAI
 
-    vaultSwap = gov.deploy(TrustedVaultSwap, registry)
+    vaultMigrator = gov.deploy(TrustedVaultMigrator, registry)
     # Give user some funds
     tokenAmount = "10 ether"
-    token.transfer(vaultSwap, tokenAmount, {"from": tokenOwner})
+    token.transfer(vaultMigrator, tokenAmount, {"from": tokenOwner})
 
     with brownie.reverts("governable::only-governance"):
-        vaultSwap.sweep(token.address, {"from": tokenOwner})
+        vaultMigrator.sweep(token.address, {"from": tokenOwner})

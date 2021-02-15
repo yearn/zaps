@@ -4,7 +4,6 @@ from brownie import Wei, chain
 from eth_account import Account
 from eth_account.messages import encode_structured_data
 
-
 def generate_permit(vault, owner: Account, spender: Account, value, nonce, deadline):
     name = "Yearn Vault"
     version = vault.apiVersion()
@@ -109,6 +108,37 @@ def beforeTestMigrateWithPermit(
     yield vaultA 
     yield vaultB
 
+def checkSuccesfullMigrateShares(
+    user,
+    sharesAmount,
+    vaultMigrator,
+    vaultA,
+    vaultB
+):
+    preMigrationVaultABalance = vaultA.balanceOf(user)
+    assert preMigrationVaultABalance >= sharesAmount
+    vaultMigrator.migrateShares(vaultA, vaultB, sharesAmount, { "from": user })
+    postMigrationVaultBBalance = vaultB.balanceOf(user)
+    assert vaultA.balanceOf(user) == preMigrationVaultABalance - sharesAmount
+    assert postMigrationVaultBBalance == sharesAmount
+
+def checkSuccesfullMigration(
+    tx,
+    user,
+    sharesAmount,
+    vaultMigrator,
+    vaultA,
+    vaultB
+):
+    preMigrationVaultABalance = vaultA.balanceOf(user)
+    assert preMigrationVaultABalance >= sharesAmount
+    tx()
+    postMigrationVaultBBalance = vaultB.balanceOf(user)
+    assert vaultA.balanceOf(user) == preMigrationVaultABalance - sharesAmount
+    assert postMigrationVaultBBalance == sharesAmount
+    vaultB.withdraw(sharesAmount, { "from": user })
+
+
 def test_migrate_all_not_approved(
     vaultFactory,
     vaultFactoryV1,
@@ -184,8 +214,18 @@ def test_migrate_all_approved(
     )
 
     vaultA.approve(vaultMigrator, tokenAmount, {"from": user})
+    
+    def migrateTx():
+        vaultMigrator.migrateAll(vaultA, vaultB, { "from": user })
 
-    vaultMigrator.migrateAll(vaultA, vaultB, {"from": user})
+    checkSuccesfullMigration(
+        migrateTx,
+        user,
+        tokenAmount,
+        vaultMigrator,
+        vaultA,
+        vaultB
+    )
 
 def test_migrate_all_with_lower_permit(    
     vaultFactory,
@@ -251,12 +291,22 @@ def test_migrate_all_with_permit(
     )
     signature = userForSignature.sign_message(permit).signature
 
-    vaultMigrator.migrateAllWithPermit(
-        vaultA, 
-        vaultB, 
-        deadline, 
-        signature, 
-        {"from": user}
+    def migrateTx():
+        vaultMigrator.migrateAllWithPermit(
+            vaultA, 
+            vaultB, 
+            deadline, 
+            signature, 
+            {"from": user}
+        )
+    
+    checkSuccesfullMigration(
+        migrateTx,
+        user,
+        tokenAmount,
+        vaultMigrator,
+        vaultA,
+        vaultB
     )
 
 def test_migrate_shares_no_approve(
@@ -332,9 +382,21 @@ def test_migrate_shares_all_approved(
         StrategyDForceDAI
     )
 
-    vaultA.approve(vaultMigrator, tokenAmount - Wei("1 ether"), {"from": user})
+    amountToMigrate = tokenAmount - Wei("1 ether")
 
-    vaultMigrator.migrateShares(vaultA, vaultB, tokenAmount - Wei("1 ether"), {"from": user})
+    vaultA.approve(vaultMigrator, amountToMigrate, {"from": user})
+
+    def migrateTx():
+        vaultMigrator.migrateShares(vaultA, vaultB, amountToMigrate, {"from": user})
+
+    checkSuccesfullMigration(
+        migrateTx,
+        user,
+        amountToMigrate,
+        vaultMigrator,
+        vaultA,
+        vaultB
+    )
 
 def test_migrate_shares_with_lower_permit(
     vaultFactory,
@@ -388,25 +450,37 @@ def test_migrate_shares_with_permit(
         vaultFactory
     )
 
+    amountToMigrate = tokenAmount - Wei("1 ether")
+
     # Migrate in vaultB
     deadline = chain[-1].timestamp + 3600
     permit = generate_permit(
         vaultA,
         userForSignature,
         vaultMigrator,
-        tokenAmount,
+        amountToMigrate,
         vaultA.nonces(user),
         deadline,
     )
     signature = userForSignature.sign_message(permit).signature
 
-    vaultMigrator.migrateSharesWithPermit(
-        vaultA, 
-        vaultB, 
-        tokenAmount,
-        deadline, 
-        signature, 
-        {"from": user}
+    def migrateTx():
+        vaultMigrator.migrateSharesWithPermit(
+            vaultA, 
+            vaultB, 
+            amountToMigrate,
+            deadline, 
+            signature, 
+            {"from": user}
+        )
+    
+    checkSuccesfullMigration(
+        migrateTx,
+        user,
+        amountToMigrate,
+        vaultMigrator,
+        vaultA,
+        vaultB
     )
 
 def test_migrate_from_v1_to_v1_different_token(
@@ -526,7 +600,18 @@ def test_migrate_from_v1_to_v2_different_token(
     vaultA.deposit(tokenAmount, {"from": user})
 
     vaultA.approve(vaultMigrator, tokenAmount, {"from": user})
-    vaultMigrator.internalMigrate(vaultA, vaultB, tokenAmount, {"from": user})
+
+    def migrateTx():
+        vaultMigrator.internalMigrate(vaultA, vaultB, tokenAmount, {"from": user})
+
+    checkSuccesfullMigration(
+        migrateTx,
+        user,
+        tokenAmount,
+        vaultMigrator,
+        vaultA,
+        vaultB
+    )
 
 def test_migrate_from_v1_to_v2_same_token(
     vaultFactory,
@@ -562,7 +647,18 @@ def test_migrate_from_v1_to_v2_same_token(
     vaultA.deposit(tokenAmount, {"from": user})
 
     vaultA.approve(vaultMigrator, tokenAmount, {"from": user})
-    vaultMigrator.internalMigrate(vaultA, vaultB, tokenAmount, {"from": user})
+
+    def migrateTx():
+        vaultMigrator.internalMigrate(vaultA, vaultB, tokenAmount, {"from": user})
+    
+    checkSuccesfullMigration(
+        migrateTx,
+        user,
+        tokenAmount,
+        vaultMigrator,
+        vaultA,
+        vaultB
+    )
 
 def test_migrate_from_v2_to_v2_different_token(
     vaultFactory, tokenFactory, tokenOwner, user, vaultMigrator
@@ -604,4 +700,14 @@ def test_migrate_from_v2_to_v2_same_token(
     # Migrate in vaultB
     vaultA.approve(vaultMigrator, tokenAmount, {"from": user})
 
-    vaultMigrator.internalMigrate(vaultA, vaultB, tokenAmount, {"from": user})
+    def migrateTx():
+        vaultMigrator.internalMigrate(vaultA, vaultB, tokenAmount, {"from": user})
+
+    checkSuccesfullMigration(
+        migrateTx,
+        user,
+        tokenAmount,
+        vaultMigrator,
+        vaultA,
+        vaultB
+    )
