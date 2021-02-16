@@ -472,49 +472,6 @@ def test_migrate_from_v1_to_v1_different_token(
         vaultMigrator.internalMigrate(vaultA, vaultB, tokenAmount, {"from": user})
 
 
-# TODO: FIx
-# def test_migrate_from_v1_to_v1_same_token(
-#     vaultFactory,
-#     vaultFactoryV1,
-#     controllerFactoryV1,
-#     Token,
-#     StrategyDForceDAI,
-#     user,
-#     vaultMigrator,
-#     gov,
-#     accounts,
-#     tokenFactory
-# ):
-#     token = Token.at("0x6B175474E89094C44Da98b954EedeAC495271d0F")  # DAI
-#     tokenOwner = accounts.at(
-#         "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643", force=True
-#     )  # whale for DAI
-
-#     # Create a V1 Vault
-#     controller = controllerFactoryV1()
-#     strategy = gov.deploy(StrategyDForceDAI, controller)
-#     vaultA = vaultFactoryV1(token, controller)
-#     controller.setStrategy(token, strategy, {"from": gov})
-
-#     # Create another V1 Vault
-#     controllerB = controllerFactoryV1()
-#     strategyB = gov.deploy(StrategyDForceDAI, controllerB)
-#     vaultB = vaultFactoryV1(token, controllerB)
-#     controllerB.setStrategy(token, strategyB, {"from": gov})
-
-#     # Give user some funds
-#     tokenAmount = Wei("10 ether")
-#     token.transfer(user, tokenAmount, {"from": tokenOwner})
-
-#     # Deposit in vaultA
-#     token.approve(vaultA, tokenAmount, {"from": user})
-#     vaultA.deposit(tokenAmount, {"from": user})
-
-#     vaultA.approve(vaultMigrator, tokenAmount, {"from": user})
-
-#     vaultMigrator.internalMigrate(vaultA, vaultB, tokenAmount, {"from": user})
-
-
 def test_migrate_from_v1_to_v2_different_token(
     vaultFactory,
     vaultFactoryV1,

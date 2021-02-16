@@ -28,7 +28,7 @@ contract TrustedVaultMigrator is
 {
     address public override registry;
 
-    modifier onlyRegisteredVault(address vault) {
+    modifier onlyLatestVault(address vault) {
         require(
             IRegistry(registry).latestVault(IVaultAPI(vault).token()) == vault,
             "Target vault should be the latest for token"
@@ -50,7 +50,7 @@ contract TrustedVaultMigrator is
         address vaultFrom,
         address vaultTo,
         uint256 shares
-    ) internal override onlyRegisteredVault(vaultTo) {
+    ) internal override onlyLatestVault(vaultTo) {
         super._migrate(vaultFrom, vaultTo, shares);
     }
 
