@@ -6,7 +6,6 @@ import "../../../interfaces/curve/Curve.sol";
 import "../../../interfaces/lido/ISteth.sol";
 
 import "@openzeppelin/contracts/math/Math.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
 import {
     SafeERC20,
@@ -15,6 +14,7 @@ import {
     Address
 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../BaseZap.sol";
+import "../../Governable.sol";
 
 contract ZapSteth is BaseZap {
     using SafeERC20 for IERC20;
@@ -31,7 +31,10 @@ contract ZapSteth is BaseZap {
     uint256 public constant DEFAULT_SLIPPAGE = 50;
     bool private _noReentry = false;
 
-    constructor() public Ownable() {
+    constructor()
+        public
+        Governable(address(0xFEB4acf3df3cDEA7399794D0869ef76A6EfAff52))
+    {
         want = IERC20(address(0x06325440D014e39736583c165C2963BA99fAf14E));
         yVault = IYVault(address(0xdCD90C7f6324cfa40d7169ef80b12031770B4325));
 
@@ -74,7 +77,7 @@ contract ZapSteth is BaseZap {
         uint256 out = StableSwapSTETH.get_dy(0, 1, halfBal);
 
         if (out < halfBal) {
-            stETH.submit{value: halfBal}(owner());
+            stETH.submit{value: halfBal}(governance);
         }
 
         uint256 balanceMid = address(this).balance;
@@ -137,7 +140,10 @@ contract ZapSteth is BaseZap {
     }
 
     //There should never be any tokens in this contract
-    function rescueTokens(address token, uint256 amount) external onlyOwner {
+    function rescueTokens(address token, uint256 amount)
+        external
+        onlyGovernance
+    {
         if (token == address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)) {
             amount = Math.min(address(this).balance, amount);
             msg.sender.transfer(amount);
