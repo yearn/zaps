@@ -9,7 +9,7 @@ interface ISubsidizer {
 
     function chiToken() external view returns (IChiToken);
 
-    function setChiToken() external;
+    function setChiToken(IChiToken _chiToken) external;
 }
 
 abstract contract Subsidizer is ISubsidizer {
@@ -19,7 +19,7 @@ abstract contract Subsidizer is ISubsidizer {
         _setChiToken(_chiToken);
     }
 
-    modifier subsidizeTx {
+    modifier subsidizeUserTx {
         uint256 _gasStart = gasleft();
         _;
         // NOTE: Per EIP-2028, gas cost is 16 per (non-empty) byte in calldata
@@ -30,7 +30,7 @@ abstract contract Subsidizer is ISubsidizer {
         chiToken.freeFromUpTo(address(this), (_gasSpent + 14154) / 41947);
     }
 
-    modifier discountTx {
+    modifier discountUserTx {
         uint256 _gasStart = gasleft();
         _;
         // NOTE: Per EIP-2028, gas cost is 16 per (non-empty) byte in calldata
