@@ -10,7 +10,32 @@ import {
     IERC20
 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
-contract VaultSwap {
+interface IVaultMigrator {
+    function migrateAll(address vaultFrom, address vaultTo) external;
+
+    function migrateShares(
+        address vaultFrom,
+        address vaultTo,
+        uint256 shares
+    ) external;
+
+    function migrateAllWithPermit(
+        address vaultFrom,
+        address vaultTo,
+        uint256 deadline,
+        bytes calldata signature
+    ) external;
+
+    function migrateSharesWithPermit(
+        address vaultFrom,
+        address vaultTo,
+        uint256 shares,
+        uint256 deadline,
+        bytes calldata signature
+    ) external;
+}
+
+contract VaultMigrator is IVaultMigrator {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
     using SafeERC20 for IVaultAPI;
@@ -23,39 +48,43 @@ contract VaultSwap {
         _;
     }
 
-    function swap(address vaultFrom, address vaultTo) external {
-        _swap(vaultFrom, vaultTo, IVaultAPI(vaultFrom).balanceOf(msg.sender));
+    function migrateAll(address vaultFrom, address vaultTo) external override {
+        _migrate(
+            vaultFrom,
+            vaultTo,
+            IVaultAPI(vaultFrom).balanceOf(msg.sender)
+        );
     }
 
-    function swap(
-        address vaultFrom,
-        address vaultTo,
-        uint256 shares
-    ) external {
-        _swap(vaultFrom, vaultTo, shares);
-    }
-
-    function swap(
+    function migrateAllWithPermit(
         address vaultFrom,
         address vaultTo,
         uint256 deadline,
         bytes calldata signature
-    ) external {
+    ) external override {
         uint256 shares = IVaultAPI(vaultFrom).balanceOf(msg.sender);
 
         _permit(vaultFrom, shares, deadline, signature);
-        _swap(vaultFrom, vaultTo, shares);
+        _migrate(vaultFrom, vaultTo, shares);
     }
 
-    function swap(
+    function migrateShares(
+        address vaultFrom,
+        address vaultTo,
+        uint256 shares
+    ) external override {
+        _migrate(vaultFrom, vaultTo, shares);
+    }
+
+    function migrateSharesWithPermit(
         address vaultFrom,
         address vaultTo,
         uint256 shares,
         uint256 deadline,
         bytes calldata signature
-    ) external {
+    ) external override {
         _permit(vaultFrom, shares, deadline, signature);
-        _swap(vaultFrom, vaultTo, shares);
+        _migrate(vaultFrom, vaultTo, shares);
     }
 
     function _permit(
@@ -76,7 +105,7 @@ contract VaultSwap {
         );
     }
 
-    function _swap(
+    function _migrate(
         address vaultFrom,
         address vaultTo,
         uint256 shares

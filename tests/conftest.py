@@ -8,14 +8,6 @@ def tokenOwner(accounts):
 
 
 @pytest.fixture
-def tokenFactory(tokenOwner, Token):
-    def factory():
-        return tokenOwner.deploy(Token)
-
-    yield factory
-
-
-@pytest.fixture
 def gov(accounts):
     yield accounts[1]
 
@@ -33,6 +25,14 @@ def guardian(accounts):
 @pytest.fixture
 def user(accounts):
     yield accounts[3]
+
+
+@pytest.fixture
+def tokenFactory(tokenOwner, Token):
+    def factory():
+        return tokenOwner.deploy(Token)
+
+    yield factory
 
 
 @pytest.fixture
@@ -68,5 +68,5 @@ def vaultFactory(pm, gov, rewards, guardian):
 
 
 @pytest.fixture
-def vaultSwap(guardian, VaultSwap):
-    yield guardian.deploy(VaultSwap)
+def vaultMigrator(guardian, VaultMigratorMock):
+    yield guardian.deploy(VaultMigratorMock)
