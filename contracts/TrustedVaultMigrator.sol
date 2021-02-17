@@ -2,7 +2,7 @@
 
 pragma solidity 0.6.12;
 
-import "./VaultSwap.sol";
+import "./VaultMigrator.sol";
 import "./Governable.sol";
 
 import "../interfaces/IRegistry.sol";
@@ -13,10 +13,22 @@ Based on https://github.com/emilianobonassi/yearn-vaults-swap
 
  */
 
-contract TrustedVaultSwap is VaultSwap, Governable {
-    address public registry;
+interface ITrustedVaultMigrator is IVaultMigrator {
+    function registry() external returns (address);
 
-    modifier onlyRegisteredVault(address vault) {
+    function sweep(address _token) external;
+
+    function setRegistry(address _registry) external;
+}
+
+contract TrustedVaultMigrator is
+    VaultMigrator,
+    Governable,
+    ITrustedVaultMigrator
+{
+    address public override registry;
+
+    modifier onlyLatestVault(address vault) {
         require(
             IRegistry(registry).latestVault(IVaultAPI(vault).token()) == vault,
             "Target vault should be the latest for token"
@@ -26,7 +38,7 @@ contract TrustedVaultSwap is VaultSwap, Governable {
 
     constructor(address _registry)
         public
-        VaultSwap()
+        VaultMigrator()
         Governable(address(0xFEB4acf3df3cDEA7399794D0869ef76A6EfAff52))
     {
         require(_registry != address(0), "Registry cannot be 0");
@@ -34,15 +46,15 @@ contract TrustedVaultSwap is VaultSwap, Governable {
         registry = _registry;
     }
 
-    function _swap(
+    function _migrate(
         address vaultFrom,
         address vaultTo,
         uint256 shares
-    ) internal override onlyRegisteredVault(vaultTo) {
-        super._swap(vaultFrom, vaultTo, shares);
+    ) internal override onlyLatestVault(vaultTo) {
+        super._migrate(vaultFrom, vaultTo, shares);
     }
 
-    function sweep(address _token) external onlyGovernance {
+    function sweep(address _token) external override onlyGovernance {
         IERC20(_token).safeTransfer(
             governance,
             IERC20(_token).balanceOf(address(this))
@@ -50,7 +62,7 @@ contract TrustedVaultSwap is VaultSwap, Governable {
     }
 
     // setters
-    function setRegistry(address _registry) external onlyGovernance {
+    function setRegistry(address _registry) external override onlyGovernance {
         require(_registry != address(0), "Registry cannot be 0");
         registry = _registry;
     }

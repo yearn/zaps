@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from brownie import TrustedVaultSwap, accounts, config, network, project, web3
+from brownie import TrustedVaultMigrator, accounts, config, network, project, web3
 from brownie.network.account import PublicKeyAccount
 from eth_utils import is_checksum_address
 
@@ -10,9 +10,9 @@ def main():
     dev = accounts.load("dev")
     print(f"You are using: 'dev' [{dev.address}]")
 
-    if input("Deploy TrustedVaultSwap? y/[N]: ").lower() != "y":
+    if input("Deploy TrustedVaultMigrator? y/[N]: ").lower() != "y":
         return
 
-    vaultSwap = TrustedVaultSwap.deploy(
+    TrustedVaultMigrator.deploy(
         PublicKeyAccount("v2.registry.ychad.eth").address, {"from": dev}
     )
