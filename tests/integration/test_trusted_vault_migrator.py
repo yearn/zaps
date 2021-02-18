@@ -8,6 +8,7 @@ def test_sweep_from_governance(
 ):
     # Registry
     registry = "0xe15461b18ee31b7379019dc523231c57d1cbc18c"
+    chiToken = "0x0000000000004946c0e9F43F4Dee607b0eF1fA1c"
     ychad = accounts.at(web3.ens.resolve("ychad.eth"), force=True)
 
     token = Token.at("0x6B175474E89094C44Da98b954EedeAC495271d0F")  # DAI
@@ -15,7 +16,7 @@ def test_sweep_from_governance(
         "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643", force=True
     )  # whale for DAI
 
-    vaultMigrator = gov.deploy(TrustedVaultMigrator, registry)
+    vaultMigrator = gov.deploy(TrustedVaultMigrator, registry, chiToken)
     # Give user some funds
     tokenAmount = Wei("10 ether")
     token.transfer(vaultMigrator, tokenAmount, {"from": tokenOwner})
@@ -34,12 +35,13 @@ def test_sweep_not_from_governance(
 ):
     # Registry v2
     registry = "0xe15461b18ee31b7379019dc523231c57d1cbc18c"
+    chiToken = "0x0000000000004946c0e9F43F4Dee607b0eF1fA1c"
     token = Token.at("0x6B175474E89094C44Da98b954EedeAC495271d0F")  # DAI
     tokenOwner = accounts.at(
         "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643", force=True
     )  # whale for DAI
 
-    vaultMigrator = gov.deploy(TrustedVaultMigrator, registry)
+    vaultMigrator = gov.deploy(TrustedVaultMigrator, registry, chiToken)
     # Give user some funds
     tokenAmount = "10 ether"
     token.transfer(vaultMigrator, tokenAmount, {"from": tokenOwner})
@@ -61,7 +63,8 @@ def test_migrate_vault_not_latest(
 ):
     # Registry
     registry = "0xe15461b18ee31b7379019dc523231c57d1cbc18c"
-    vaultMigrator = gov.deploy(TrustedVaultMigratorMock, registry)
+    chiToken = "0x0000000000004946c0e9F43F4Dee607b0eF1fA1c"
+    vaultMigrator = gov.deploy(TrustedVaultMigratorMock, registry, chiToken)
 
     token = Token.at("0x6B175474E89094C44Da98b954EedeAC495271d0F")  # DAI
     tokenOwner = accounts.at(
@@ -119,7 +122,8 @@ def test_e2e_migrate_v1_dai_migration(
 ):
     # Registry
     registry = "0xe15461b18ee31b7379019dc523231c57d1cbc18c"
-    vaultMigrator = gov.deploy(TrustedVaultMigratorMock, registry)
+    chiToken = "0x0000000000004946c0e9F43F4Dee607b0eF1fA1c"
+    vaultMigrator = gov.deploy(TrustedVaultMigratorMock, registry, chiToken)
 
     DAI = Token.at("0x6b175474e89094c44da98b954eedeac495271d0f")  # DAI
     yDAIWhale = accounts.at(
@@ -142,7 +146,8 @@ def test_e2e_migrate_v1_usdc_migration(
 ):
     # Registry
     registry = "0xe15461b18ee31b7379019dc523231c57d1cbc18c"
-    vaultMigrator = gov.deploy(TrustedVaultMigratorMock, registry)
+    chiToken = "0x0000000000004946c0e9F43F4Dee607b0eF1fA1c"
+    vaultMigrator = gov.deploy(TrustedVaultMigratorMock, registry, chiToken)
 
     USDC = Token.at("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48")  # USDC
     yUSDCWhale = accounts.at(

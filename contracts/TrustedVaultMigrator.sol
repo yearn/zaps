@@ -2,10 +2,11 @@
 
 pragma solidity 0.6.12;
 
-import "./VaultMigrator.sol";
-import "./Governable.sol";
-
 import "../interfaces/IRegistry.sol";
+
+import "./Subsidizer.sol";
+import "./Governable.sol";
+import "./VaultMigrator.sol";
 
 /**
 
@@ -24,6 +25,7 @@ interface ITrustedVaultMigrator is IVaultMigrator {
 contract TrustedVaultMigrator is
     VaultMigrator,
     Governable,
+    Subsidizer,
     ITrustedVaultMigrator
 {
     address public override registry;
@@ -36,10 +38,11 @@ contract TrustedVaultMigrator is
         _;
     }
 
-    constructor(address _registry)
+    constructor(address _registry, IChiToken _chiToken)
         public
         VaultMigrator()
         Governable(address(0xFEB4acf3df3cDEA7399794D0869ef76A6EfAff52))
+        Subsidizer(_chiToken)
     {
         require(_registry != address(0), "Registry cannot be 0");
 
@@ -50,7 +53,7 @@ contract TrustedVaultMigrator is
         address vaultFrom,
         address vaultTo,
         uint256 shares
-    ) internal override onlyLatestVault(vaultTo) {
+    ) internal override onlyLatestVault(vaultTo) subsidizeUserTx {
         super._migrate(vaultFrom, vaultTo, shares);
     }
 
@@ -65,5 +68,9 @@ contract TrustedVaultMigrator is
     function setRegistry(address _registry) external override onlyGovernance {
         require(_registry != address(0), "Registry cannot be 0");
         registry = _registry;
+    }
+
+    function setChiToken(IChiToken _chiToken) external override onlyGovernance {
+        _setChiToken(_chiToken);
     }
 }
