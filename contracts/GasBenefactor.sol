@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0
+// Copied from https://github.com/b0dhidharma/contract-tools/blob/main/contracts/GasBenefactor.sol
 
 pragma solidity 0.6.12;
 
