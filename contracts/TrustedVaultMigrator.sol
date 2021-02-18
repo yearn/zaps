@@ -2,10 +2,9 @@
 
 pragma solidity 0.6.12;
 
-import "@contract-tools/contracts/GasBenefactor.sol";
-
 import "../interfaces/IRegistry.sol";
 
+import "./GasBenefactor.sol";
 import "./Governable.sol";
 import "./VaultMigrator.sol";
 

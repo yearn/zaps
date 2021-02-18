@@ -8,7 +8,6 @@ autofetch_sources: True
 
 # require OpenZepplin Contracts
 dependencies:
-  - b0dhidharma/contract-tools@0.1.2
   - iearn-finance/yearn-vaults@0.3.1
   - OpenZeppelin/openzeppelin-contracts@3.1.0
 
@@ -19,7 +18,7 @@ compiler:
     remappings:
       - "@yearnvaults=iearn-finance/yearn-vaults@0.3.1"
       - "@openzeppelin=OpenZeppelin/openzeppelin-contracts@3.1.0"
-      - "@contract-tools=b0dhidharma/contract-tools@0.1.2"
+      # - "@contract-tools=b0dhidharma/contract-tools@0.1.2"
 
 reports:
   exclude_contracts:
