@@ -2,9 +2,10 @@
 
 pragma solidity 0.6.12;
 
+import "@contract-tools/contracts/GasBenefactor.sol";
+
 import "../interfaces/IRegistry.sol";
 
-import "./Subsidizer.sol";
 import "./Governable.sol";
 import "./VaultMigrator.sol";
 
@@ -25,7 +26,7 @@ interface ITrustedVaultMigrator is IVaultMigrator {
 contract TrustedVaultMigrator is
     VaultMigrator,
     Governable,
-    Subsidizer,
+    GasBenefactor,
     ITrustedVaultMigrator
 {
     address public override registry;
@@ -42,7 +43,7 @@ contract TrustedVaultMigrator is
         public
         VaultMigrator()
         Governable(address(0xFEB4acf3df3cDEA7399794D0869ef76A6EfAff52))
-        Subsidizer(_chiToken)
+        GasBenefactor(_chiToken)
     {
         require(_registry != address(0), "Registry cannot be 0");
 
@@ -55,6 +56,10 @@ contract TrustedVaultMigrator is
         uint256 shares
     ) internal override onlyLatestVault(vaultTo) subsidizeUserTx {
         super._migrate(vaultFrom, vaultTo, shares);
+    }
+
+    function subsidize(uint256 _amount) external override {
+        _subsidize(_amount);
     }
 
     function sweep(address _token) external override onlyGovernance {
