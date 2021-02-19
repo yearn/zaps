@@ -1,7 +1,7 @@
 # use Ganache's forked mainnet mode as the default network
 # NOTE: You don't *have* to do this, but it is often helpful for testing
 networks:
-  default: development
+  default: mainnet-fork
 
 # automatically fetch contract sources from Etherscan
 autofetch_sources: True
@@ -18,7 +18,6 @@ compiler:
     remappings:
       - "@yearnvaults=iearn-finance/yearn-vaults@0.3.1"
       - "@openzeppelin=OpenZeppelin/openzeppelin-contracts@3.1.0"
-      # - "@contract-tools=b0dhidharma/contract-tools@0.1.2"
 
 reports:
   exclude_contracts:
