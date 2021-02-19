@@ -25,3 +25,22 @@ To generate ABI after cloning the repo and configuring brownie setup following t
 `brownie compile`
 
 The ABI should be available at `build/contracts/TrustedVaultMigrator.json`
+
+## Permit support
+
+All migrate operations also support the Permit method pattern for users to sign the migration and a relayer can send the migration transaction.
+
+**NOTE**: This is only supported on v2 to v2 migrations or v1 vaults that implement the Permit pattern.
+
+Permit Supported Methods:
+
+- `migrateAllWithPermit`: same as migrateAll using the Permit method pattern adding deadline and signature
+- `migrateSharesWithPermit`: same as migrateShares using the Permit method pattern adding deadline and signature
+
+## Gas Token support
+
+If the migrator contract contains balance for [chiToken](https://etherscan.io/address/0x0000000000004946c0e9f43f4dee607b0ef1fa1c) it will try to use the gas token to reduce transaction gas cost for migration operations
+
+## Additional Notes and Requirements
+
+It is specified that the target v2 vault needs to be available in the registry `v2.registry.ychad.eth` as a **supported and endorsed yearn vault**. The migrator doesn't support migrating into experimental vaults as target.
