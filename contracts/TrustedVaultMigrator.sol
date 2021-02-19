@@ -2,11 +2,11 @@
 
 pragma solidity 0.6.12;
 
-import "../interfaces/IRegistry.sol";
-
 import "./GasBenefactor.sol";
-import "./Governable.sol";
 import "./VaultMigrator.sol";
+import "./Governable.sol";
+
+import "../interfaces/IRegistry.sol";
 
 /**
 
@@ -53,12 +53,8 @@ contract TrustedVaultMigrator is
         address vaultFrom,
         address vaultTo,
         uint256 shares
-    ) internal override onlyLatestVault(vaultTo) subsidizeUserTx {
+    ) internal override onlyLatestVault(vaultTo) {
         super._migrate(vaultFrom, vaultTo, shares);
-    }
-
-    function subsidize(uint256 _amount) external override {
-        _subsidize(_amount);
     }
 
     function sweep(address _token) external override onlyGovernance {
@@ -66,6 +62,10 @@ contract TrustedVaultMigrator is
             governance,
             IERC20(_token).balanceOf(address(this))
         );
+    }
+
+    function subsidize(uint256 _amount) external override {
+        _subsidize(_amount);
     }
 
     // setters
