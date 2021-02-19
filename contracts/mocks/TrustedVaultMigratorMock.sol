@@ -5,7 +5,10 @@ pragma solidity 0.6.12;
 import "../TrustedVaultMigrator.sol";
 
 contract TrustedVaultMigratorMock is TrustedVaultMigrator {
-    constructor(address _registry) public TrustedVaultMigrator(_registry) {}
+    constructor(address _registry, IChiToken _chiToken)
+        public
+        TrustedVaultMigrator(_registry, _chiToken)
+    {}
 
     function internalMigrate(
         address vaultFrom,

@@ -14,5 +14,7 @@ def main():
         return
 
     TrustedVaultMigrator.deploy(
-        PublicKeyAccount("v2.registry.ychad.eth").address, {"from": dev}
+        PublicKeyAccount("v2.registry.ychad.eth").address,
+        "0x0000000000004946c0e9F43F4Dee607b0eF1fA1c",  # Mainnet Chi Token
+        {"from": dev},
     )
