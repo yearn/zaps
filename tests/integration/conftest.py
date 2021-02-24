@@ -1,5 +1,5 @@
 import pytest
-from brownie import config
+from brownie import config, Contract
 
 
 @pytest.fixture
@@ -25,6 +25,12 @@ def guardian(accounts):
 @pytest.fixture
 def user(accounts):
     yield accounts[3]
+
+
+@pytest.fixture
+def Vault(pm):
+    Vault = pm(config["dependencies"][0]).Vault
+    yield Vault
 
 
 @pytest.fixture
@@ -70,3 +76,24 @@ def vaultFactory(pm, gov, rewards, guardian):
 @pytest.fixture
 def vaultMigrator(guardian, VaultMigratorMock):
     yield guardian.deploy(VaultMigratorMock)
+
+
+@pytest.fixture
+def weth(interface):
+    yield interface.ERC20("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2")
+
+
+@pytest.fixture
+def eth_whale(accounts):
+    whale = accounts.at("0x1b3cB81E51011b549d78bf720b0d924ac763A7C2", force=True)
+    yield whale
+
+
+@pytest.fixture
+def zap_eth(gov, ZapYvWETH):
+    yield gov.deploy(ZapYvWETH)
+
+
+@pytest.fixture
+def live_weth_vault(Vault):
+    yield Vault.at("0xa9fE4601811213c340e850ea305481afF02f5b28")
