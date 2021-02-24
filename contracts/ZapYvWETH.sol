@@ -31,10 +31,8 @@ contract ZapYvWETH {
     }
 
     function depositETH() public payable {
-        uint256 _before = IERC20(weth).balanceOf(address(this));
         WETH(weth).deposit{value: msg.value}();
-        uint256 _after = IERC20(weth).balanceOf(address(this));
-        uint256 _amount = _after.sub(_before);
+        uint256 _amount = IERC20(weth).balanceOf(address(this));
         IVaultAPI vault = IVaultAPI(yvWETH);
 
         IVaultAPI(vault).deposit(_amount, msg.sender);
