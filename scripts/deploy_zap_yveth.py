@@ -2,6 +2,7 @@ from brownie import ZapYvWETH, accounts, network
 from brownie.network.account import PublicKeyAccount
 from brownie.network.gas.strategies import GasNowStrategy
 
+
 import click
 
 # `speed` must be one of: rapid, fast, standard, slow
@@ -21,6 +22,5 @@ def main():
     publish_source = click.confirm("Verify source on etherscan?")
 
     ZapYvWETH.deploy(
-        {"from": dev, "gas_price": gas_strategy},
-        publish_source=publish_source,
+        {"from": dev, "gas_price": gas_strategy}, publish_source=publish_source,
     )
