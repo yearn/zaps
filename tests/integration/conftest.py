@@ -67,7 +67,7 @@ def vaultFactory(pm, gov, rewards, guardian):
         Vault = pm(config["dependencies"][0]).Vault
         vault = guardian.deploy(Vault)
         vault.initialize(token, gov, rewards, "", "", {"from": guardian})
-        vault.setDepositLimit(2 ** 256 - 1, {"from": gov})
+        vault.setDepositLimit(2**256 - 1, {"from": gov})
         return vault
 
     yield factory
