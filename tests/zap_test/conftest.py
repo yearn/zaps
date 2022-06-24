@@ -21,3 +21,8 @@ def vault():
 @pytest.fixture
 def zap(ZapEth, vault, deployer):
     yield deployer.deploy(ZapEth, vault)
+
+
+@pytest.fixture(scope="function", autouse=True)
+def shared_setup(fn_isolation):
+    pass

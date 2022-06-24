@@ -1,7 +1,18 @@
 def test_deposit(user, zap, vault):
+    assert vault.balanceOf(user) == 0
     before = user.balance()
     amount = 10**18
     zap.deposit({"from": user, "value": amount})
+
+    assert vault.balanceOf(user) != 0
+    assert before == user.balance() + amount
+
+
+def test_eth_transfer(user, zap, vault):
+    assert vault.balanceOf(user) == 0
+    before = user.balance()
+    amount = 10**18
+    user.transfer(zap, amount)
 
     assert vault.balanceOf(user) != 0
     assert before == user.balance() + amount
