@@ -2,7 +2,7 @@
 
 interface Vault():
     def deposit(amount: uint256, recipient: address) -> uint256: nonpayable
-    def withdraw(maxShares: uint256) -> uint256: nonpayable
+    def withdraw(maxShares: uint256, recipient: address, max_loss: uint256) -> uint256: nonpayable
     def transferFrom(_from : address, _to : address, _value : uint256) -> bool: nonpayable
     def transfer(_to : address, _value : uint256) -> bool: nonpayable
     def token() -> address: nonpayable
@@ -38,10 +38,10 @@ def deposit():
 
 @external
 @nonpayable
-def withdraw(amount: uint256):
+def withdraw(amount: uint256, max_loss: uint256 = 1):
     self.started_withdraw = True
     VAULT.transferFrom(msg.sender, self, amount)
-    weth_amount: uint256 = VAULT.withdraw(amount)
+    weth_amount: uint256 = VAULT.withdraw(amount, self, max_loss)
     assert amount != 0 #dev: "!amount"
     WETH.withdraw(weth_amount)
     send(msg.sender, weth_amount)
