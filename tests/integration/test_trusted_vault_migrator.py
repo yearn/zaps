@@ -4,7 +4,12 @@ from brownie import chain, web3, Wei
 
 
 def test_sweep_from_governance(
-    interface, Token, user, TrustedVaultMigrator, gov, accounts,
+    interface,
+    Token,
+    user,
+    TrustedVaultMigrator,
+    gov,
+    accounts,
 ):
     # Registry
     registry = "0xe15461b18ee31b7379019dc523231c57d1cbc18c"
@@ -31,7 +36,12 @@ def test_sweep_from_governance(
 
 
 def test_sweep_not_from_governance(
-    interface, Token, user, TrustedVaultMigrator, gov, accounts,
+    interface,
+    Token,
+    user,
+    TrustedVaultMigrator,
+    gov,
+    accounts,
 ):
     # Registry v2
     registry = "0xe15461b18ee31b7379019dc523231c57d1cbc18c"
