@@ -26,19 +26,19 @@ def __init__(vault: address):
     self.started_withdraw = False
 
 @internal
-def _deposit(sender: address, amount: uint256):
+def _deposit(sender: address, amount: uint256) -> uint256:
     assert amount != 0 #dev: "!value"
     WETH.deposit(value= amount)
-    VAULT.deposit(amount, sender)
+    return VAULT.deposit(amount, sender)
 
 @external
 @payable
-def deposit():
-    self._deposit(msg.sender, msg.value)
+def deposit() -> uint256:
+    return self._deposit(msg.sender, msg.value)
 
 @external
 @nonpayable
-def withdraw(amount: uint256, max_loss: uint256 = 1):
+def withdraw(amount: uint256, max_loss: uint256 = 1) -> uint256:
     self.started_withdraw = True
     VAULT.transferFrom(msg.sender, self, amount)
     weth_amount: uint256 = VAULT.withdraw(amount, self, max_loss)
@@ -49,6 +49,7 @@ def withdraw(amount: uint256, max_loss: uint256 = 1):
     if left_over > 0:
         VAULT.transfer(msg.sender, left_over)
     self.started_withdraw = False
+    return weth_amount
 
 @external
 @payable
