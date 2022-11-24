@@ -66,9 +66,7 @@ def test_migrate_vault(
     # Check that token funds where moved correctly
     assert to_shares_after > to_shares_before
     # Check that user can withdraw from new vault
-    new_vault_dai.withdraw(
-        new_vault_dai.balanceOf(dai_whale), {"from": dai_whale}
-    )
+    new_vault_dai.withdraw(new_vault_dai.balanceOf(dai_whale), {"from": dai_whale})
 
 
 def test_migrate_vault_reverts(
@@ -168,7 +166,7 @@ def test_migrate_vault_permit(
     # check that this works
     from_shares_before = oldest_vault.balanceOf(user)
     to_shares_before = new_vault_dai.balanceOf(user)
-    
+
     # migrate with our permit
     deadline = chain[-1].timestamp + 3600
     permit = generate_permit(
@@ -180,11 +178,11 @@ def test_migrate_vault_permit(
         deadline,
     )
     signature = userForSignature.sign_message(permit).signature
-    
+
     simple_migrator.migrateAllWithPermit(
-            oldest_vault, new_vault_dai, deadline, signature, {"from": user}
-        )
-    
+        oldest_vault, new_vault_dai, deadline, signature, {"from": user}
+    )
+
     from_shares_after = oldest_vault.balanceOf(user)
     to_shares_after = new_vault_dai.balanceOf(user)
 
@@ -193,9 +191,7 @@ def test_migrate_vault_permit(
     # Check that token funds where moved correctly
     assert to_shares_after > to_shares_before
     # Check that user can withdraw from new vault
-    new_vault_dai.withdraw(
-        new_vault_dai.balanceOf(user), {"from": user}
-    )
+    new_vault_dai.withdraw(new_vault_dai.balanceOf(user), {"from": user})
 
 
 def test_migrate_vault_bad_permit(
@@ -224,7 +220,7 @@ def test_migrate_vault_bad_permit(
     # check that this works
     from_shares_before = oldest_vault.balanceOf(dai_whale)
     to_shares_before = new_vault_dai.balanceOf(dai_whale)
-    
+
     # migrate with our permit
     deadline = chain[-1].timestamp + 3600
     permit = generate_permit(
@@ -236,7 +232,7 @@ def test_migrate_vault_bad_permit(
         deadline,
     )
     signature = userForSignature.sign_message(permit).signature
-    
+
     with brownie.reverts():
         simple_migrator.migrateAllWithPermit(
             oldest_vault, new_vault_dai, deadline, signature, {"from": dai_whale}
@@ -270,7 +266,7 @@ def test_migrate_vault_permit_too_little(
     # check that this works
     from_shares_before = oldest_vault.balanceOf(user)
     to_shares_before = new_vault_dai.balanceOf(user)
-    
+
     # migrate with our permit
     deadline = chain[-1].timestamp + 3600
     permit = generate_permit(
@@ -282,13 +278,12 @@ def test_migrate_vault_permit_too_little(
         deadline,
     )
     signature = userForSignature.sign_message(permit).signature
-    
-    
+
     with brownie.reverts():
         simple_migrator.migrateAllWithPermit(
             oldest_vault, new_vault_dai, deadline, signature, {"from": user}
         )
-    
+
     from_shares_after = oldest_vault.balanceOf(user)
     to_shares_after = new_vault_dai.balanceOf(user)
 
@@ -321,7 +316,9 @@ def test_migrate_some(
     from_shares_before = oldest_vault.balanceOf(dai_whale)
     to_shares_before = new_vault_dai.balanceOf(dai_whale)
     oldest_vault.approve(simple_migrator, vault_shares, {"from": dai_whale})
-    simple_migrator.migrateShares(oldest_vault, new_vault_dai, vault_shares, {"from": dai_whale})
+    simple_migrator.migrateShares(
+        oldest_vault, new_vault_dai, vault_shares, {"from": dai_whale}
+    )
     from_shares_after = oldest_vault.balanceOf(dai_whale)
     to_shares_after = new_vault_dai.balanceOf(dai_whale)
 
@@ -330,9 +327,7 @@ def test_migrate_some(
     # Check that token funds where moved correctly
     assert to_shares_after > to_shares_before
     # Check that user can withdraw from new vault
-    new_vault_dai.withdraw(
-        new_vault_dai.balanceOf(dai_whale), {"from": dai_whale}
-    )
+    new_vault_dai.withdraw(new_vault_dai.balanceOf(dai_whale), {"from": dai_whale})
 
 
 def test_migrate_some_permit(
@@ -362,7 +357,7 @@ def test_migrate_some_permit(
     # check that this works
     from_shares_before = oldest_vault.balanceOf(user)
     to_shares_before = new_vault_dai.balanceOf(user)
-    
+
     # migrate with our permit
     deadline = chain[-1].timestamp + 3600
     permit = generate_permit(
@@ -374,12 +369,11 @@ def test_migrate_some_permit(
         deadline,
     )
     signature = userForSignature.sign_message(permit).signature
-    
-    
+
     simple_migrator.migrateSharesWithPermit(
-            oldest_vault, new_vault_dai, vault_shares, deadline, signature, {"from": user}
-        )
-    
+        oldest_vault, new_vault_dai, vault_shares, deadline, signature, {"from": user}
+    )
+
     from_shares_after = oldest_vault.balanceOf(user)
     to_shares_after = new_vault_dai.balanceOf(user)
 
@@ -388,9 +382,7 @@ def test_migrate_some_permit(
     # Check that token funds where moved correctly
     assert to_shares_after > to_shares_before
     # Check that user can withdraw from new vault
-    new_vault_dai.withdraw(
-        new_vault_dai.balanceOf(user), {"from": user}
-    )
+    new_vault_dai.withdraw(new_vault_dai.balanceOf(user), {"from": user})
 
 
 def test_extras(
@@ -410,30 +402,29 @@ def test_extras(
     # can't migrate to different want
     with brownie.reverts():
         simple_migrator.acceptGovernance({"from": dai_whale})
-        
+
     # can't accept gov that's not pending
     with brownie.reverts():
         simple_migrator.acceptGovernance({"from": dai_whale})
-        
+
     # can't accept gov that's not pending
     with brownie.reverts():
         simple_migrator.acceptGovernance({"from": dai_whale})
-        
+
     # can't set registry if not gov
     with brownie.reverts():
         simple_migrator.setRegistry(registry, {"from": dai_whale})
-        
+
     # can't set registry to zero
     with brownie.reverts():
         simple_migrator.setRegistry(ZERO_ADDRESS, {"from": gov})
-        
+
     # can't set pending gov if not gov
     with brownie.reverts():
         simple_migrator.setPendingGovernance(ZERO_ADDRESS, {"from": dai_whale})
-        
+
     # do things correctly
     simple_migrator.setRegistry(registry, {"from": gov})
     simple_migrator.setPendingGovernance(dai_whale, {"from": gov})
     simple_migrator.acceptGovernance({"from": dai_whale})
     assert simple_migrator.governance() == dai_whale
-

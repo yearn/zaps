@@ -10,12 +10,16 @@ def isolation(fn_isolation):
 
 @pytest.fixture
 def gov(accounts):
-    yield accounts.at("0xF5d9D6133b698cE29567a90Ab35CfB874204B3A7", force=True) # optimism 0xF5d9D6133b698cE29567a90Ab35CfB874204B3A7
+    yield accounts.at(
+        "0xF5d9D6133b698cE29567a90Ab35CfB874204B3A7", force=True
+    )  # optimism 0xF5d9D6133b698cE29567a90Ab35CfB874204B3A7
 
 
 @pytest.fixture
 def registry():
-    yield interface.IRegistry("0x79286Dd38C9017E5423073bAc11F53357Fc5C128")  # optimism: 0x79286Dd38C9017E5423073bAc11F53357Fc5C128, mainnet v2: 0x50c1a2eA0a861A967D9d0FFE2AE4012c2E053804
+    yield interface.IRegistry(
+        "0x79286Dd38C9017E5423073bAc11F53357Fc5C128"
+    )  # optimism: 0x79286Dd38C9017E5423073bAc11F53357Fc5C128, mainnet v2: 0x50c1a2eA0a861A967D9d0FFE2AE4012c2E053804
 
 
 @pytest.fixture
