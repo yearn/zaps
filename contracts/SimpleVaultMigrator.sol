@@ -26,6 +26,13 @@ interface IRegistry {
     function latestVault(address token) external view returns (address);
 }
 
+/// @title Yearn Simple Vault Migrator
+/// @author yearn
+/// @notice This contract is used to migrate from an older to a newer version of a yearn vault.
+/// @dev Contract can only migrate to the newest version of a vault for a token. Migration
+///  must be between vaults that have the same underlying token. Gasless approval via permit()
+///  is an option for all v2 yearn vault API versions except 0.4.4.
+
 contract SimpleVaultMigrator {
     using SafeERC20 for IERC20;
     using SafeERC20 for IVaultAPI;
@@ -156,7 +163,7 @@ contract SimpleVaultMigrator {
      * @notice Migrate all of our vault shares to the newest
      *  vault version using the permit function for gasless approvals.
      * @dev Throws if the vaults do not have the same want, or if our
-     *  target is not the newest version
+     *  target is not the newest version. Cannot be used with 0.4.4 vaults.
      * @param vaultFrom The old vault we are migrating from.
      * @param vaultTo The new vault we are migrating to.
      * @param deadline The deadline for our permit call.
@@ -178,7 +185,7 @@ contract SimpleVaultMigrator {
      * @notice Migrate a specific amount of our vault shares to the newest
      *  vault version using the permit function for gasless approvals.
      * @dev Throws if the vaults do not have the same want, or if our
-     *  target is not the newest version
+     *  target is not the newest version. Cannot be used with 0.4.4 vaults.
      * @param vaultFrom The old vault we are migrating from.
      * @param vaultTo The new vault we are migrating to.
      * @param shares The number of shares to migrate.
